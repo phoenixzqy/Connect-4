@@ -1,4 +1,4 @@
-function io (http, app) {
+module.exports = function (http, app) {
 	var io = require('socket.io')(http);
 
 	io.on('connection', function(socket){
@@ -11,6 +11,6 @@ function io (http, app) {
 			io.emit('chat-message-update', body);
 		});
 	});
+	return io;
 }
 
-module.exports = io;
