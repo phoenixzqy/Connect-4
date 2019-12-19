@@ -23,7 +23,6 @@
 * room chat, broadcast to all who are NOT in a game
 * create a game
 * join a game
-* start a game
 * quit a game
 
 ## In Game
