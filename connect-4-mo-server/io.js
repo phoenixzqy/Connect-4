@@ -37,9 +37,9 @@ module.exports = function (http, app) {
 			socket.emit('chat-update',
 				{ip:'SERVER', message:'Joined ' + room});
 			socket.broadcast.to(room).emit('chat-update',
-				{ip:'SERVER', user + ' has joined.'});
+				{ip:'SERVER', message:user + ' has joined.'});
 			socket.broadcast.to(prev).emit('chat-update',
-				{ip:'SERVER', user + ' has left.'});
+				{ip:'SERVER', message:user + ' has left.'});
 			socket.emit('room-update', room);
 		});
 
