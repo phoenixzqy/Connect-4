@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+	useState,
+	useEffect
+} from 'react';
 import './App.css';
 import io from 'socket.io-client';
 
 
 function App() {
-	const [socket, setSocket] = useState(null)
+	const [socket, setSocket] = useState(null);
 	const [message, setMessage] = useState("");
 	const [user, setUser] = useState("");
 	const [chatChain, setChatChain] = useState([]);
 	useEffect(() => {
-		if(!socket) {
+		if (!socket) {
 			setSocket(io());
 		} else {
 			socket.on('chat-message-update', msg => {
 				setChatChain(chain => {
 					chain.push(msg);
-					if(chain.length > 100) {
+					if (chain.length > 100) {
 						chain.shift();
 					}
 					return [...chain];
@@ -32,11 +35,14 @@ function App() {
 	}
 	const handleMsgSubmit = event => {
 		event.preventDefault();
-		socket.emit('chat-message-submit', {user: user || "Anomynous", message});
+		socket.emit('chat-message-submit', {
+			user: user || "Anomynous",
+			message
+		});
 		setMessage("");
 		return false;
 	}
-  return (
+	return (
 		<div className="App">
 			<ul>{chatChain.map((msg, index) => {
 				return <li key={index}>{msg.user}[{msg.ip}]: {msg.message}</li>
@@ -60,7 +66,7 @@ function App() {
 				<button onClick={handleMsgSubmit}>Send</button>
 			</form>
 		</div>
-  );
+	);
 }
 
 export default App;
