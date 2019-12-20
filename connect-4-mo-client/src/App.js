@@ -5,7 +5,6 @@ import React, {
 import './App.css';
 import io from 'socket.io-client';
 
-
 function App() {
 	const [socket, setSocket] = useState(null);
 	const [message, setMessage] = useState("");
@@ -15,7 +14,13 @@ function App() {
 		if (!socket) {
 			setSocket(io());
 		} else {
-			socket.on('chat-message-update', msg => {
+			socket.on('chat-update', msg => {
+				msg.colorstyle = {color: 'black'};
+
+				if(msg.ip == 'SERVER') {
+					msg.colorstyle = {color: 'gray'};
+				}
+
 				setChatChain(chain => {
 					chain.push(msg);
 					if (chain.length > 100) {
@@ -45,7 +50,7 @@ function App() {
 	return (
 		<div className="App">
 			<ul>{chatChain.map((msg, index) => {
-				return <li key={index}>{msg.user}[{msg.ip}]: {msg.message}</li>
+				return <li key={index} style={msg.colorstyle}>{msg.user}[{msg.ip}]: {msg.message}</li>
 			})}</ul>
 			<form action="">
 				<input 
