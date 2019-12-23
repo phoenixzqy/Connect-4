@@ -69,12 +69,9 @@ module.exports = function (http, app) {
 	io.on('connection', function(socket) {
 		conn_init(socket);
 
-		socket.on('disconnect', function(user, room) {
+		socket.on('disconnect', function() {
 			socket.broadcast.emit('chat-update',
 				{...srvmsg, message:socket.handshake.address + ' has disconnected.'});
-
-			del_user(user, room);
-			users.delete(user);
 		});
 
 		socket.on('room-create', function(data) {
