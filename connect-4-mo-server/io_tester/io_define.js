@@ -1,16 +1,23 @@
 const io_define = {
 	'chat-submit': {
 		params: {
-			user: 'tester',
+			user: 'user01',
 			message: 'This is a test message'
-		},
+		}
 	},
 
-	'create-root': {
+	'room-create': {
 		params: {
-			user: 'tester',
-			message: 'Create a new room'
-		},
+			user: 'user01',
+			room: 'room01'
+		}
+	},
+
+	'room-join': {
+		params: {
+			user: 'user02',
+			room: 'room01'
+		}
 	}
 }
 
