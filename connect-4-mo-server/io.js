@@ -1,46 +1,104 @@
-var users = {};
-var rooms = ['Lobby'];
+var srvmsg = {ip:'SERVER'}
+var users  = new Map();
+var rooms  = new Map();
+
+rooms.set('Lobby', new Set());
 
 function conn_init(socket) {
 	socket.room = 'Lobby';
-	//socket.username = name;
-	//users[name]     = name;
 	socket.join('Lobby');
 
 	socket.emit('chat-update',
-		{ip:'SERVER', message:'Connected to lobby.'});
+		{...srvmsg, message:'Connected to lobby.'});
 	socket.broadcast.emit('chat-update',
-		{ip:'SERVER', message:socket.handshake.address + ' has connected.'});
+		{...srvmsg, message:socket.handshake.address + ' has connected.'});
+}
+
+function add_user(user, room) {
+	var roomusers = rooms.get(room);
+	if (typeof roomusers === 'undefined') {
+		console.log("Inavlid room: " + room + ".");
+		return -1;
+	}
+
+	roomusers.add(user);
+	users.set(user, room);
+}
+
+function del_user(user, room) {
+	var roomusers = rooms.get(room);
+	if (roomusers === 'undefined') {
+		console.log("Inavlid room: " + room + ".");
+		return -1;
+	}
+
+	roomusers.delete(user);
+}
+
+function add_room(room) {
+	if (rooms.has(room))
+		return -1;
+	rooms.set(room, new Set());
+}
+
+function room_join(socket, user, room) {
+	room_leave(socket, user);
+
+	if (add_user(user, room) < 0)
+		return -1;
+
+	socket.room = room;
+	socket.join(room);
+
+	socket.emit('chat-update',
+		{...srvmsg, message:'Joined ' + room});
+}
+
+function room_leave(socket, user) {
+	var room = socket.room;
+	del_user(user, room);
+
+	socket.leave(room);
+	socket.broadcast.to(room).emit('chat-update',
+		{...srvmsg, message:user + ' has left.'});
 }
 
 module.exports = function (http, app) {
 	var io = require('socket.io')(http);
 
 	io.on('connection', function(socket) {
-
 		conn_init(socket);
 
-		socket.on('disconnect', function() {
+		socket.on('disconnect', function(user, room) {
 			socket.broadcast.emit('chat-update',
-				{ip:'SERVER', message:socket.handshake.address + ' has disconnected.'});
+				{...srvmsg, message:socket.handshake.address + ' has disconnected.'});
+
+			del_user(user, room);
+			users.delete(user);
 		});
 
-		socket.on('room-create', function(room) {
-			room.push(room);
+		socket.on('room-create', function(data) {
+			if (add_room(data.room) < 0) {
+				socket.emit('ret-crit', 'Room ' + data.room + ' already exists.');
+				return -1;
+			}
+			if (room_join(socket, data.user, data.room) < 0) {
+				socket.emit('ret-crit', 'Failed to create room ' + data.room + '.');
+				return -1;
+			}
+
 			socket.emit('room-update', socket.room);
 		});
 
-		socket.on('room-join', function(user, room) {
-			var prev = socket.room;
-			socket.leave(prev);
-			socket.join(room);
-			socket.emit('chat-update',
-				{ip:'SERVER', message:'Joined ' + room});
-			socket.broadcast.to(room).emit('chat-update',
-				{ip:'SERVER', message:user + ' has joined.'});
-			socket.broadcast.to(prev).emit('chat-update',
-				{ip:'SERVER', message:user + ' has left.'});
-			socket.emit('room-update', room);
+		socket.on('room-join', function(data) {
+			if (room_join(socket, data.user, data.room) < 0) {
+				socket.emit('log-err', 'Cannot find ' + data.room + '.');
+				return -1;
+			}
+
+			socket.broadcast.to(data.room).emit('chat-update',
+				{...srvmsg, message:data.user + ' has joined.'});
+			socket.emit('room-update', socket.room);
 		});
 
 		socket.on('chat-submit', function(msg) {
