@@ -76,7 +76,7 @@ module.exports = function (http, app) {
 
 		socket.on('room-create', function(data) {
 			if (add_room(data.room) < 0) {
-				socket.emit('ret-crit', 'Room ' + data.room + ' already exists.');
+				socket.emit('ret-err', 'Room ' + data.room + ' already exists.');
 				return -1;
 			}
 			if (room_join(socket, data.user, data.room) < 0) {
@@ -89,7 +89,7 @@ module.exports = function (http, app) {
 
 		socket.on('room-join', function(data) {
 			if (room_join(socket, data.user, data.room) < 0) {
-				socket.emit('log-err', 'Cannot find ' + data.room + '.');
+				socket.emit('ret-err', 'Cannot find ' + data.room + '.');
 				return -1;
 			}
 
