@@ -100,7 +100,7 @@ module.exports = function (http, app) {
 
 		socket.on('chat-submit', function(msg) {
 			let body = {...msg, ip: socket.handshake.address};
-			io.emit('chat-update', body);
+			io.sockets.in(socket.room).emit('chat-update', body);
 		});
 	});
 
