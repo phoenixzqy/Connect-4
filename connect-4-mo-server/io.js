@@ -75,6 +75,16 @@ function emit_err(socket, cmd, err) {
 	socket.emit(cmd, 'Error: ' + err);
 }
 
+function dump_all_rooms()
+{
+	rooms.forEach(function (users, room, rooms) {
+		console.log("room: %s.", room);
+		users.forEach(function (user) {
+			console.log("user: %s.", user);
+		})
+	})
+}
+
 module.exports = function (http, app) {
 	var io = require('socket.io')(http);
 
@@ -88,21 +98,43 @@ module.exports = function (http, app) {
 		});
 
 		socket.on('room-create', function(data) {
-			if (add_room(data.room) < 0)
-				emit_err(socket, 'ret-err', 'Room ' + data.room + ' already exists.');
+			//TODO need fine tune - separate logic here
+			if (!users.has(socket.client.id)
+				|| users.get(socket.client.id) !== 'Lobby'
+				|| !rooms.get('Lobby').has(socket.client.id)) {
+				emit_err(socket, 'ret-err', 'Cannot create room ' + data.room + '.');
+				return -1;
+			}
 
-			if (room_join(socket, data.user, data.room) < 0)
+			//XXX change to handle by exception?
+			if (add_room(data.room) < 0) {
+				emit_err(socket, 'ret-err', 'Room ' + data.room + ' already exists.');
+				return -1;
+			}
+
+			if (room_join(socket, socket.client.id, data.room) < 0) {
 				emit_err(socket, 'ret-crit', 'Cannot create room ' + data.room + '.');
+				return -1;
+			}
 
 			socket.emit('room-update', socket.room);
 		});
 
 		socket.on('room-join', function(data) {
-			if (room_join(socket, data.user, data.room) < 0)
+			if (!users.has(socket.client.id)
+				|| users.get(socket.client.id) !== 'Lobby'
+				|| !rooms.get('Lobby').has(socket.client.id)) {
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
+				return -1;
+			}
+
+			if (room_join(socket, socket.client.id, data.room) < 0) {
+				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
+				return -1;
+			}
 
 			socket.broadcast.to(data.room).emit('chat-update',
-				{...srvmsg, message:data.user + ' has joined.'});
+				{...srvmsg, message:socket.client.id + ' has joined.'});
 			socket.emit('room-update', socket.room);
 		});
 
