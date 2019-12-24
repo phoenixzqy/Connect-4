@@ -15,7 +15,8 @@
     "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build && rm -rf ../connect-4-mo-server/public && mv build ../connect-4-mo-server/public",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+		"iotest": "node ./src/socketio_bash/index.js"
   },
   "eslintConfig": {
     "extends": "react-app"
