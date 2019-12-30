@@ -2,7 +2,7 @@ var srvmsg = {ip:'SERVER'}
 var users  = new Map();
 var rooms  = new Map();
 
-add_room('Lobby');
+room_add('Lobby');
 
 function conn_init(io, socket) {
 	room_join(io, socket, socket.client.id, 'Lobby');
@@ -20,27 +20,28 @@ function conn_fini(socket) {
 }
 
 function add_user(user, room) {
-	if (!rooms.has(room))
-		return -1;
-
 	rooms.get(room).users.add(user);
 	users.set(user, room);
 }
 
 function del_user(user, room) {
-	if (!rooms.has(room))
-		return -1;
-
 	rooms.get(room).users.delete(user);
 }
 
-function add_room(room) {
+function room_add(room) {
 	rooms.set(room, {users: new Set(), board: new Array()});
 }
 
+function room_del(room) {
+	rooms.delete(room);
+}
+
+//XXX let it throw instead?
 function room_join(io, socket, user, room) {
-	if (add_user(socket.client.id, room) < 0)
+	if (!rooms.has(room))
 		return -1;
+
+	add_user(socket.client.id, room);
 
 	socket.room = room;
 	socket.join(room);
@@ -54,8 +55,10 @@ function room_join(io, socket, user, room) {
 
 function room_leave(socket, user) {
 	var room = socket.room;
-	if(del_user(socket.client.id, room) < 0)
+	if (!rooms.has(room))
 		return -1;
+
+	del_user(socket.client.id, room);
 
 	socket.leave(room);
 	socket.broadcast.to(room).emit('user-update',
@@ -112,14 +115,17 @@ module.exports = function (http, app) {
 			}
 
 			//XXX change to handle by exception?
-			if (add_room(data.room) < 0) {
+			if (room_add(data.room) < 0) {
 				emit_err(socket, 'ret-err', 'Room ' + data.room + ' already exists.');
 				return -1;
 			}
 
-			//FIXME need do cleanup
 			if (room_move(io, socket, socket.client.id, data.room) < 0) {
-				emit_err(socket, 'ret-svr', 'Cannot create room ' + data.room + '.');
+				emit_err(socket, 'ret-svr',
+					'Cannot move to created room ' + data.room + '.');
+				if (room_del(data.room) < 0)
+					emit_err(socket, 'ret-svr',
+						'Failed to remove room ' + data.room + '.');
 				return -1;
 			}
 
@@ -127,6 +133,7 @@ module.exports = function (http, app) {
 		});
 
 		socket.on('room-join', function(data) {
+			//XXX DRY
 			if (!users.has(socket.client.id)
 				|| users.get(socket.client.id) !== 'Lobby'
 				|| !rooms.get('Lobby').users.has(socket.client.id)) {
