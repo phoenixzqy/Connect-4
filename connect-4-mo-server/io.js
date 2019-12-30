@@ -5,16 +5,7 @@ var rooms  = new Map();
 add_room('Lobby');
 
 function conn_init(io, socket) {
-	socket.room = 'Lobby';
-	socket.join('Lobby');
-
-	add_user(socket.client.id, 'Lobby');
-	io.in('Lobby').emit('user-update', Array.from(users.keys()));
-
-	socket.emit('chat-update',
-		{...srvmsg, message:'Connected to lobby.'});
-	socket.broadcast.emit('chat-update',
-		{...srvmsg, message:socket.handshake.address + ' has connected.'});
+	room_join(io, socket, socket.client.id, 'Lobby');
 }
 
 function conn_fini(socket) {
@@ -24,13 +15,8 @@ function conn_fini(socket) {
 		return -1;
 	}
 
-	if(del_user(user, socket.room) < 0)
-		console.log("Failed to delete user %s from room %s.",
-			user, socket.room);
-
+	room_leave(socket, user);
 	users.delete(user);
-	socket.broadcast.to(socket.room).emit(
-		'user-update', Array.from(users.keys()));
 }
 
 function add_user(user, room) {
@@ -53,8 +39,7 @@ function add_room(room) {
 }
 
 function room_join(io, socket, user, room) {
-	if (add_user(socket.client.id, room) < 0
-		|| room_leave(socket, user) < 0)
+	if (add_user(socket.client.id, room) < 0)
 		return -1;
 
 	socket.room = room;
@@ -62,6 +47,8 @@ function room_join(io, socket, user, room) {
 
 	io.in(room).emit('user-update', Array.from(users.keys()));
 	socket.emit('chat-update', {...srvmsg, message:'Joined ' + room});
+	socket.broadcast.to(room).emit('chat-update',
+		{...srvmsg, message:user + ' has joined.'});
 }
 
 function room_leave(socket, user) {
@@ -74,6 +61,14 @@ function room_leave(socket, user) {
 		Array.from(users.keys()));
 	socket.broadcast.to(room).emit('chat-update',
 		{...srvmsg, message:user + ' has left.'});
+}
+
+function room_move(io, socket, user, room) {
+	if (room_leave(socket, user) < 0
+		|| room_join(io, socket, user, room) < 0)
+		return -1;
+	
+	return 0;
 }
 
 function emit_err(socket, cmd, err) {
@@ -98,12 +93,10 @@ module.exports = function (http, app) {
 		conn_init(io, socket);
 
 		socket.on('conn-init', function(socket) {
-			conn_init(socket);
+			conn_init(io, socket);
 		});
 
 		socket.on('disconnect', function() {
-			socket.broadcast.emit('chat-update',
-				{...srvmsg, message:socket.handshake.address + ' has disconnected.'});
 			conn_fini(socket);
 		});
 
@@ -124,7 +117,7 @@ module.exports = function (http, app) {
 			}
 
 			//FIXME need do cleanup
-			if (room_join(io, socket, socket.client.id, data.room) < 0) {
+			if (room_move(io, socket, socket.client.id, data.room) < 0) {
 				emit_err(socket, 'ret-svr', 'Cannot create room ' + data.room + '.');
 				return -1;
 			}
@@ -140,13 +133,11 @@ module.exports = function (http, app) {
 				return -1;
 			}
 
-			if (room_join(io, socket, socket.client.id, data.room) < 0) {
+			if (room_move(io, socket, socket.client.id, data.room) < 0) {
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
 
-			socket.broadcast.to(data.room).emit('chat-update',
-				{...srvmsg, message:socket.client.id + ' has joined.'});
 			socket.emit('room-update', socket.room);
 		});
 
