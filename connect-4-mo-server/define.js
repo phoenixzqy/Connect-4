@@ -9,4 +9,7 @@ var commands = {
 	"chat-update",
 	"game-move",
 	"game-update"
+	"ret-err",			/* standard error. */
+	"ret-clt",			/* unexpected client state. */
+	"ret-svr"			/* server side error. */
 }
