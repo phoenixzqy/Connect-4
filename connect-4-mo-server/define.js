@@ -1,6 +1,7 @@
 var commands = {
 	"connect",
 	"disconnect",
+	"user-update",
 	"room-create",
 	"room-join",
 	"room-update",

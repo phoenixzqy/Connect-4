@@ -2,13 +2,14 @@ var srvmsg = {ip:'SERVER'}
 var users  = new Map();
 var rooms  = new Map();
 
-rooms.set('Lobby', new Set());
+add_room('Lobby');
 
-function conn_init(socket) {
+function conn_init(io, socket) {
 	socket.room = 'Lobby';
 	socket.join('Lobby');
 
-	add_user(socket.client.id, socket.room);
+	add_user(socket.client.id, 'Lobby');
+	io.in('Lobby').emit('user-update', Array.from(users.keys()));
 
 	socket.emit('chat-update',
 		{...srvmsg, message:'Connected to lobby.'});
@@ -28,13 +29,15 @@ function conn_fini(socket) {
 			user, socket.room);
 
 	users.delete(user);
+	socket.broadcast.to(socket.room).emit(
+		'user-update', Array.from(users.keys()));
 }
 
 function add_user(user, room) {
 	if (!rooms.has(room))
 		return -1;
 
-	rooms.get(room).add(user);
+	rooms.get(room).users.add(user);
 	users.set(user, room);
 }
 
@@ -42,14 +45,14 @@ function del_user(user, room) {
 	if (!rooms.has(room))
 		return -1;
 
-	rooms.get(room).delete(user);
+	rooms.get(room).users.delete(user);
 }
 
 function add_room(room) {
-	rooms.set(room, new Set());
+	rooms.set(room, {users: new Set(), board: new Array()});
 }
 
-function room_join(socket, user, room) {
+function room_join(io, socket, user, room) {
 	if (add_user(socket.client.id, room) < 0
 		|| room_leave(socket, user) < 0)
 		return -1;
@@ -57,8 +60,8 @@ function room_join(socket, user, room) {
 	socket.room = room;
 	socket.join(room);
 
-	socket.emit('chat-update',
-		{...srvmsg, message:'Joined ' + room});
+	io.in(room).emit('user-update', Array.from(users.keys()));
+	socket.emit('chat-update', {...srvmsg, message:'Joined ' + room});
 }
 
 function room_leave(socket, user) {
@@ -67,6 +70,8 @@ function room_leave(socket, user) {
 		return -1;
 
 	socket.leave(room);
+	socket.broadcast.to(room).emit('user-update',
+		Array.from(users.keys()));
 	socket.broadcast.to(room).emit('chat-update',
 		{...srvmsg, message:user + ' has left.'});
 }
@@ -79,8 +84,9 @@ function dump_all_rooms()
 {
 	rooms.forEach(function (users, room, rooms) {
 		console.log("room: %s.", room);
-		users.forEach(function (user) {
-			console.log("user: %s.", user);
+		users.forEach(function (val) {
+			console.log("users: %s.", val.users);
+			console.log("board: %s.", val.board);
 		})
 	})
 }
@@ -89,7 +95,11 @@ module.exports = function (http, app) {
 	var io = require('socket.io')(http);
 
 	io.on('connection', function(socket) {
-		conn_init(socket);
+		conn_init(io, socket);
+
+		socket.on('conn-init', function(socket) {
+			conn_init(socket);
+		});
 
 		socket.on('disconnect', function() {
 			socket.broadcast.emit('chat-update',
@@ -99,10 +109,11 @@ module.exports = function (http, app) {
 
 		socket.on('room-create', function(data) {
 			//TODO need fine tune - separate logic here
+			//if doesnt even have user, exception, otherwise error
 			if (!users.has(socket.client.id)
 				|| users.get(socket.client.id) !== 'Lobby'
-				|| !rooms.get('Lobby').has(socket.client.id)) {
-				emit_err(socket, 'ret-err', 'Cannot create room ' + data.room + '.');
+				|| !rooms.get('Lobby').users.has(socket.client.id)) {
+				emit_err(socket, 'ret-clt', 'Cannot create room ' + data.room + '.');
 				return -1;
 			}
 
@@ -112,8 +123,9 @@ module.exports = function (http, app) {
 				return -1;
 			}
 
-			if (room_join(socket, socket.client.id, data.room) < 0) {
-				emit_err(socket, 'ret-crit', 'Cannot create room ' + data.room + '.');
+			//FIXME need do cleanup
+			if (room_join(io, socket, socket.client.id, data.room) < 0) {
+				emit_err(socket, 'ret-svr', 'Cannot create room ' + data.room + '.');
 				return -1;
 			}
 
@@ -123,12 +135,12 @@ module.exports = function (http, app) {
 		socket.on('room-join', function(data) {
 			if (!users.has(socket.client.id)
 				|| users.get(socket.client.id) !== 'Lobby'
-				|| !rooms.get('Lobby').has(socket.client.id)) {
-				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
+				|| !rooms.get('Lobby').users.has(socket.client.id)) {
+				emit_err(socket, 'ret-clt', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
 
-			if (room_join(socket, socket.client.id, data.room) < 0) {
+			if (room_join(io, socket, socket.client.id, data.room) < 0) {
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
