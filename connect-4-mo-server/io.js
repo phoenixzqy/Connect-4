@@ -45,7 +45,8 @@ function room_join(io, socket, user, room) {
 	socket.room = room;
 	socket.join(room);
 
-	io.in(room).emit('user-update', Array.from(users.keys()));
+	io.in(room).emit('user-update',
+		Array.from(rooms.get(room).users));
 	socket.emit('chat-update', {...srvmsg, message:'Joined ' + room});
 	socket.broadcast.to(room).emit('chat-update',
 		{...srvmsg, message:user + ' has joined.'});
@@ -58,7 +59,7 @@ function room_leave(socket, user) {
 
 	socket.leave(room);
 	socket.broadcast.to(room).emit('user-update',
-		Array.from(users.keys()));
+		Array.from(rooms.get(room).users));
 	socket.broadcast.to(room).emit('chat-update',
 		{...srvmsg, message:user + ' has left.'});
 }
