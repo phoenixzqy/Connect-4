@@ -1,31 +1,30 @@
-var srvmsg = {ip:'SERVER'}
+var srvmsg = {
+	ip: 'SERVER',
+	type: 'system'
+}
 var users  = new Map();
 var rooms  = new Map();
 
 room_add('Lobby');
 
-function conn_init(io, socket) {
-	room_join(io, socket, socket.client.id, 'Lobby');
-}
-
 function conn_fini(socket) {
-	var user = socket.client.id;
-	if (!users.has(user)) {
-		console.log("Invalid client ID: " + user + ".");
+	var uid = socket.client.id;
+	if (!users.has(uid)) {
+		console.log("Invalid client ID: " + uid + ".");
 		return -1;
 	}
 
-	room_leave(socket, user);
-	users.delete(user);
+	room_leave(socket, users.get(uid));
+	users.delete(uid);
 }
 
-function add_user(user, room) {
-	rooms.get(room).users.add(user);
-	users.set(user, room);
+function add_user(user) {
+	rooms.get(user.room).users.add(user.id);
+	users.set(user.id, user);
 }
 
-function del_user(user, room) {
-	rooms.get(room).users.delete(user);
+function del_user(user) {
+	rooms.get(user.room).users.delete(user.id);
 }
 
 function room_add(room) {
@@ -35,22 +34,50 @@ function room_add(room) {
 function room_del(room) {
 	rooms.delete(room);
 }
-
+function parseRoomData(room) {
+	let result = {};
+	rooms.forEach((data, name) => {
+		if (room !== 'Lobby' && room !== name) return;
+		let rUsers = {};
+		result[name] = JSON.parse(JSON.stringify(data));
+		data.users.forEach((uid) => {
+			rUsers[uid] = users.get(uid);
+		});
+		result[name].users = rUsers;
+	});
+	return result;
+}
 //XXX let it throw instead?
 function room_join(io, socket, user, room) {
+	user.room = room;
 	if (!rooms.has(room))
 		return -1;
 
-	add_user(socket.client.id, room);
+	// init user
+	if (!users.has(user.id)) {
+		socket.emit('user-initiated', user);
+	}
+	
+	add_user(user);
 
 	socket.room = room;
 	socket.join(room);
+	// Lobby users need to know all user & room changes
+	io.in('Lobby').emit(
+		'user-updated', 
+		parseRoomData('Lobby'), 
+	);
+	// Room users only focus on changes in the room
+	if (room !== 'Lobby') {
+		io.in(room).emit(
+			'user-updated', 
+			parseRoomData(room), 
+		);
+	}
 
-	io.in(room).emit('user-update',
-		Array.from(rooms.get(room).users));
-	socket.emit('chat-update', {...srvmsg, message:'Joined ' + room});
-	socket.broadcast.to(room).emit('chat-update',
-		{...srvmsg, message:user + ' has joined.'});
+	socket.emit('chat-updated', {...srvmsg, message: `Joined ${ room}`});
+	socket.broadcast.to(room).emit('chat-updated',
+		{...srvmsg, message: `${user.name} has joined.`});
 }
 
 function room_leave(socket, user) {
@@ -58,13 +85,15 @@ function room_leave(socket, user) {
 	if (!rooms.has(room))
 		return -1;
 
-	del_user(socket.client.id, room);
+	del_user(user);
 
 	socket.leave(room);
-	socket.broadcast.to(room).emit('user-update',
-		Array.from(rooms.get(room).users));
-	socket.broadcast.to(room).emit('chat-update',
-		{...srvmsg, message:user + ' has left.'});
+	socket.broadcast.to(room).emit(
+		'user-updated',
+		parseRoomData(room), 
+	);
+	socket.broadcast.to(room).emit('chat-updated',
+		{...srvmsg, message: `${user.name} has left.`});
 }
 
 function room_move(io, socket, user, room) {
@@ -94,10 +123,15 @@ module.exports = function (http, app) {
 	var io = require('socket.io')(http);
 
 	io.on('connection', function(socket) {
-		conn_init(io, socket);
-
-		socket.on('conn-init', function(socket) {
-			conn_init(io, socket);
+		socket.on('join-lobby', function(userData) {
+			room_join(io, socket, 
+				{
+					...userData,
+					id: socket.client.id,
+					ip: socket.request.connection.remoteAddress
+				},
+				'Lobby'
+			);
 		});
 
 		socket.on('disconnect', function() {
@@ -108,7 +142,7 @@ module.exports = function (http, app) {
 			//TODO need fine tune - separate logic here
 			//if doesnt even have user, exception, otherwise error
 			if (!users.has(socket.client.id)
-				|| users.get(socket.client.id) !== 'Lobby'
+				|| users.get(socket.client.id).room !== 'Lobby'
 				|| !rooms.get('Lobby').users.has(socket.client.id)) {
 				emit_err(socket, 'ret-clt', 'Cannot create room ' + data.room + '.');
 				return -1;
@@ -120,7 +154,7 @@ module.exports = function (http, app) {
 				return -1;
 			}
 
-			if (room_move(io, socket, socket.client.id, data.room) < 0) {
+			if (room_move(io, socket, users.get(socket.client.id), data.room) < 0) {
 				emit_err(socket, 'ret-svr',
 					'Cannot move to created room ' + data.room + '.');
 				if (room_del(data.room) < 0)
@@ -129,29 +163,33 @@ module.exports = function (http, app) {
 				return -1;
 			}
 
-			socket.emit('room-update', socket.room);
+			socket.emit('room-updated', socket.room);
 		});
 
 		socket.on('room-join', function(data) {
 			//XXX DRY
 			if (!users.has(socket.client.id)
-				|| users.get(socket.client.id) !== 'Lobby'
+				|| users.get(socket.client.id).room !== 'Lobby'
 				|| !rooms.get('Lobby').users.has(socket.client.id)) {
 				emit_err(socket, 'ret-clt', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
 
-			if (room_move(io, socket, socket.client.id, data.room) < 0) {
+			if (room_move(io, socket, users.get(socket.client.id), data.room) < 0) {
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
 
-			socket.emit('room-update', socket.room);
+			socket.emit('room-updated', socket.room);
 		});
 
 		socket.on('chat-submit', function(msg) {
-			let body = {...msg, ip: socket.handshake.address};
-			io.sockets.in(socket.room).emit('chat-update', body);
+			let body = {
+				message: msg, 
+				user: users.get(socket.client.id),
+				type: "message"
+			};
+			io.sockets.in(socket.room).emit('chat-updated', body);
 		});
 	});
 

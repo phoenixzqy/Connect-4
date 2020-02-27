@@ -12,7 +12,7 @@ socket.onevent = function(packet) {
 	packet.data = ["*"].concat(args);
 	onevent.call(this, packet); // additional call to catch-all
 };
-
+// avatar attribute: Icons made by <a href="https://www.flaticon.com/authors/darius-dan" title="Darius Dan">Darius Dan</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
 socket.on("*", function(event, data) {
 	console.log(
 		`-----------[${new Date().toLocaleString()}]---------
