@@ -1,10 +1,4 @@
-import React, {
-	useState,
-	useEffect
-} from 'react';
-import {
-	useHistory
-} from "react-router-dom";
+import React from 'react';
 import {
 	makeStyles
 } from '@material-ui/styles';
@@ -135,7 +129,6 @@ export default function({
 	rooms
 }){
 	const classes = useStyles();
-	const history = useHistory();
 	function userListRender(users) {
 		let result = [];
 		for (let uid in users) {

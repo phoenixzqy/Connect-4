@@ -18,7 +18,7 @@ const useStyles = makeStyles({
 		display: 'flex',
 		flexWrap: 'wrap',
 		zIndex: -1,
-		opacity: .1
+		opacity: .05
 	},
 	cell: {
 		width: CELL_CONFIG.width,

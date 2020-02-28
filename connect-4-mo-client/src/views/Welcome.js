@@ -1,6 +1,7 @@
 import React, {
 	useState,
-	useEffect
+	useEffect,
+	useCallback
 } from 'react';
 import {
 	useHistory
@@ -82,31 +83,7 @@ export default function({
 	const [show, setShow] = useState(false);
 	let history = useHistory();
 	const [showPage, setShowPage] = useState(false);
-	useEffect(() => {
-		let myUser = JSON.parse(window.localStorage.getItem('user'));
-		if (myUser) {
-			// auto joining 
-			joinLobby(myUser);
-		} else {
-			setShowPage(true);
-		}
-	}, []);
-
-	function avatarSelectorRender() {
-		return avatars.map((url, i) => <Avatar
-				className={classes.avatar}
-				key={i}
-				src={url}
-				size={64}
-				onClick={e => {
-					setUser(user => ({...user, avatar: i}))
-					setShow(false);
-				}}
-			></Avatar>)
-	}
-
-
-	function joinLobby(myUser) {
+	const joinLobby = useCallback((myUser) => {
 		socket.on('connect', () => {
 			if (socket.connected) {
 				socket.emit("join-lobby", myUser);
@@ -129,6 +106,18 @@ export default function({
 			console.error(err);
 			message.error("[ERROR] Failed to connect server!");
 		});
+		socket.on('ret-svr', err => {
+			console.error(err);
+			message.error(err);
+		});
+		socket.on('ret-clt', err => {
+			console.error(err);
+			message.error(err);
+		});
+		socket.on('ret-err', err => {
+			console.error(err);
+			message.error(err);
+		});
 		socket.on('disconnect', (reason) => {
 			if (reason === 'io server disconnect') {
 				// the disconnection was initiated by the server, you need to reconnect manually
@@ -147,7 +136,31 @@ export default function({
 
 		// start connection
 		socket.open();
+	}, [socket, history, setUser]);
+
+	useEffect(() => {
+		let myUser = JSON.parse(window.localStorage.getItem('user'));
+		if (myUser) {
+			// auto joining 
+			joinLobby(myUser);
+		} else {
+			setShowPage(true);
+		}
+	}, [joinLobby]);
+
+	function avatarSelectorRender() {
+		return avatars.map((url, i) => <Avatar
+				className={classes.avatar}
+				key={i}
+				src={url}
+				size={64}
+				onClick={e => {
+					setUser(user => ({...user, avatar: i}))
+					setShow(false);
+				}}
+			></Avatar>)
 	}
+
 
 	function handleClick() {
 		if (!user.name) {
@@ -195,6 +208,7 @@ export default function({
 						<Input 
 							placeholder="What's your name?" 
 							className={classes.uname}
+							onPressEnter={handleClick}
 							onChange={e => {
 								let name = e.target.value;
 								setUser(user => ({

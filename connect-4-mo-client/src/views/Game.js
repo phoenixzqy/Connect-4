@@ -16,27 +16,29 @@ import {
 import Users from "../components/Users";
 import Rooms from "../components/Rooms";
 import Chat from "../components/Chat";
+import Connect4 from "../components/Connect4";
 
 import colors from "../components/configs/colors";
 
 const VIEWPORT_CONFIG = {
-	width: 1024,
-	height: 640,
-	userBoxWidth: '20%',
-	roomBoxWidth: '20%',
-	gameBoxWidth: '60%',
-	chatBoxWidth: '60%',
+	width: '100vw',
+	height: '100vh',
+	userBoxWidth: 250,
+	roomBoxWidth: 250,
+	gameBoxWidth: 'calc(100vw - 750px)',
+	chatBoxWidth: 'calc(100vw - 500px)',
+	chatBoxWidth1: 500,
 }
 const useStyles = makeStyles({
 	root: {
 		width: VIEWPORT_CONFIG.width,
 		height: VIEWPORT_CONFIG.height,
-		border: `1px solid ${colors.primaryDark}`,
-		borderRadius: 5,
+		// border: `1px solid ${colors.primaryDark}`,
+		// backgroundColor: '#fff',
+		// borderRadius: 5,
 		display: 'flex',
 		flexDirection: 'row',
 		overflow: 'hidden',
-		backgroundColor: '#fff'
 	},
 	userBox: {
 		width: VIEWPORT_CONFIG.userBoxWidth,
@@ -66,16 +68,25 @@ export default function({
 	const classes = useStyles();
 	let history = useHistory();
 	let { path, url } = useRouteMatch();
-	const [page, setPage] = useState('lobby');
 	const [rooms, setRooms] = useState(null);
 	const [chats, setChats] = useState([]);
+	const changePage = useCallback((page) => {
+		history.push(`${url}/${page}`);
+		setChats([]);
+	}, [url, history, setChats]);
 	useEffect(() => {
 		if (socket.disconnected) {
 			history.push('/');
 			return;
 		} else {
 			socket.on("user-updated", data => {
-				setRooms(data);
+				console.log(data);
+				setRooms(data.rooms);
+				let currentPage = history.location.pathname.split('/')[2].toLowerCase();
+				let currentRoom = data.currentRoom.toLowerCase();
+				if (currentPage !== currentRoom) {
+					changePage(currentRoom);
+				}
 			});
 			socket.on("chat-updated", msg => {
 				setChats(chat => {
@@ -89,11 +100,14 @@ export default function({
 					if (newChat.length > 1000) newChat.shift();
 					return newChat;
 				});
-			})
+			});
 		}
-	}, [socket, history, setChats]);
-	function changePage() {
-		history.push(`${url}/${page}`);
+	}, [socket, history, setChats, changePage]);
+	function createRoom(room) {
+		socket.emit('room-create', { room });
+	}
+	function joinRoom(room) {
+		socket.emit('room-join', { room });
 	}
 	function submitChat(msg) {
 		socket.emit('chat-submit', msg);
@@ -106,19 +120,27 @@ export default function({
 			<Switch>
 				<Route path={`${path}/lobby`}>
 					<div className={classes.roomBox}>
-						<Rooms rooms={rooms}/>
+						<Rooms rooms={rooms} createRoom={createRoom} joinRoom={joinRoom}/>
 					</div>
 				</Route>
-				<Route path={`${path}/game`}>
+				<Route path={`${path}/:room`}>
 					<div className={classes.gameBox}>
-						Game.
+						<Connect4 
+							socket={socket}
+							leaveRoom={() => {
+								joinRoom('Lobby');
+								changePage('lobby');
+							}}
+						/>
 					</div>
 				</Route>
 			</Switch>
 			<div 
 				className={classes.chatBox}
 				style={{
-					width: page === 'lobby' ? '60%' : '20%'
+					width: history.location.pathname === `${path}/lobby` ? 
+					VIEWPORT_CONFIG.chatBoxWidth :
+					VIEWPORT_CONFIG.chatBoxWidth1
 				}}
 			>
 				<Chat user={user} chats={chats} submitChat={submitChat}/>

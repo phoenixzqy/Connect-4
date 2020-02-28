@@ -1,3 +1,8 @@
+const {
+	EVENTS, 
+	LOBBY
+} = require('../connect-4-mo-client/define')
+
 var srvmsg = {
 	ip: 'SERVER',
 	type: 'system'
@@ -24,10 +29,16 @@ function add_user(user) {
 }
 
 function del_user(user) {
-	rooms.get(user.room).users.delete(user.id);
+	let room = user.room;
+	rooms.get(room).users.delete(user.id);
+	// reomove empty room except Lobby.
+	if (room !== 'Lobby' && rooms.get(room).users.size === 0) {
+		room_del(room);
+	}
 }
 
 function room_add(room) {
+	if (rooms.has(room)) return -1;
 	rooms.set(room, {users: new Set(), board: new Array()});
 }
 
@@ -62,16 +73,14 @@ function room_join(io, socket, user, room) {
 
 	socket.room = room;
 	socket.join(room);
-	// Lobby users need to know all user & room changes
-	io.in('Lobby').emit(
+	io.in(room).emit(
 		'user-updated', 
-		parseRoomData('Lobby'), 
+		{ rooms: parseRoomData(room), currentRoom: room }, 
 	);
-	// Room users only focus on changes in the room
 	if (room !== 'Lobby') {
-		io.in(room).emit(
+		io.in('Lobby').emit(
 			'user-updated', 
-			parseRoomData(room), 
+			{ rooms: parseRoomData('Lobby'), currentRoom: 'Lobby' }, 
 		);
 	}
 
@@ -80,26 +89,32 @@ function room_join(io, socket, user, room) {
 		{...srvmsg, message: `${user.name} has joined.`});
 }
 
-function room_leave(socket, user) {
+function room_leave(
+	socket, 
+	user, 
+	shouldBroadcast = true // in case of "room_move", user will get updates in room_join right after room_leave. so no needs to update users twice
+) {
 	var room = socket.room;
 	if (!rooms.has(room))
 		return -1;
 
 	del_user(user);
-
 	socket.leave(room);
 	socket.broadcast.to(room).emit(
 		'user-updated',
-		parseRoomData(room), 
+		{ rooms: parseRoomData(room), currentRoom: room }, 
 	);
 	socket.broadcast.to(room).emit('chat-updated',
 		{...srvmsg, message: `${user.name} has left.`});
 }
 
 function room_move(io, socket, user, room) {
-	if (room_leave(socket, user) < 0
-		|| room_join(io, socket, user, room) < 0)
+	console.log(room)
+	if (room_leave(socket, user, false) < 0
+		|| room_join(io, socket, user, room) < 0) {
+		console.log('room_move tailed')
 		return -1;
+	}
 	
 	return 0;
 }
@@ -162,15 +177,11 @@ module.exports = function (http, app) {
 						'Failed to remove room ' + data.room + '.');
 				return -1;
 			}
-
-			socket.emit('room-updated', socket.room);
 		});
 
 		socket.on('room-join', function(data) {
 			//XXX DRY
-			if (!users.has(socket.client.id)
-				|| users.get(socket.client.id).room !== 'Lobby'
-				|| !rooms.get('Lobby').users.has(socket.client.id)) {
+			if (!users.has(socket.client.id)) {
 				emit_err(socket, 'ret-clt', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
@@ -179,10 +190,8 @@ module.exports = function (http, app) {
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
-
-			socket.emit('room-updated', socket.room);
 		});
-
+ 
 		socket.on('chat-submit', function(msg) {
 			let body = {
 				message: msg, 

@@ -1,7 +1,4 @@
-import React, {
-	useState,
-	useEffect
-} from 'react';
+import React from 'react';
 import {
 	makeStyles
 } from '@material-ui/styles';
@@ -16,7 +13,7 @@ const useStyles = makeStyles({
 		width: '100%',
 		position: 'relative',
 		display: 'flex',
-		marginTop: 5
+		marginBottom: 7.5,
 	},
 	systemMsg: {
 		fontSize: 11,
@@ -24,6 +21,7 @@ const useStyles = makeStyles({
 		textAlign: 'center',
 		margin: '5px auto',
 		color: '#777',
+		userSelect: 'none',
 		"&:before": {
 			content: '""',
 			width: '30%',
@@ -45,8 +43,9 @@ const useStyles = makeStyles({
 		marginRight: 5,
 	},
 	messageBox: {
-		padding: "0 5px",
-		backgroundColor: '#efefef69',
+		padding: "0 5px 5px",
+		backgroundColor: '#f9c3f52b',
+		width: '100%',
 	},
 	userMsgTitle: {
 		fontSize: 12,

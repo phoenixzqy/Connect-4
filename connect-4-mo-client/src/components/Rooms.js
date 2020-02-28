@@ -1,11 +1,14 @@
 import React, {
-	useState,
-	useEffect
+	useState
 } from 'react';
 import {
 	makeStyles
 } from '@material-ui/styles';
-import { Button } from 'antd';
+import { 
+	Button,
+	Modal,
+	Input
+} from 'antd';
 import colors from "../components/configs/colors";
 
 const HEADER_HEIGHT = 50;
@@ -81,18 +84,39 @@ const useStyles = makeStyles({
 			color: colors.primaryDark,
 		}
 	},
+	input: {
+		width: '100%',
+		marginBottom: 5
+	}
 });
 
 
 
-export default function({ rooms }){
+export default function({ 
+	rooms,
+	createRoom,
+	joinRoom,
+}){
+	const DEFAULT_ROOM_VALUES = {
+		name: '',
+		password: '',
+		allowInspectors: true,
+		row: 6,
+		col: 7
+	};
 	const classes = useStyles();
+	const [show, setShow] = useState(false);
+	const [roomValues, setRoomValues] = useState(DEFAULT_ROOM_VALUES);
 	function roomListRender() {
 		let result = [];
 		for (let room in rooms) {
 			if (room === 'Lobby') continue;
 			result.push(
-				<div className={classes.roomListItem}>
+				<div 
+					key={room} 
+					className={classes.roomListItem}
+					onClick={() => joinRoom(room)}
+				>
 					<p className={classes.rName}>{room}</p>
 					<span className={classes.rStatus}>[status]</span>
 					<p className={classes.rucount}> users: {Object.keys(rooms[room].users).length}</p>
@@ -101,11 +125,22 @@ export default function({ rooms }){
 		}
 		return result;
 	}
+	const handleChange = name => e => {
+		let value = e.target.value;
+		setRoomValues(v => ({
+			...v,
+			[name]: value
+		}));
+	}
 	return (
 		<div className={classes.root}>
 			<div className={classes.headerBox}>
 				<span className={classes.header}>Rooms</span>
-				<Button icon="plus" className={classes.addBtn}/>
+				<Button 
+					icon="plus" 
+					className={classes.addBtn}
+					onClick={() => setShow(true)}
+				/>
 			</div>
 			<div className={classes.roomBox}>
 				{
@@ -114,6 +149,53 @@ export default function({ rooms }){
 					: null
 				}
 			</div>
+			<Modal
+				title="Create a Game Room"
+				visible={show}
+				onOk={() => {
+					setShow(false);
+					createRoom(roomValues.name);
+				}}
+				onCancel={() => {
+					setShow(false);
+					setRoomValues(DEFAULT_ROOM_VALUES);
+				}}
+			>
+				<Input
+					addonAfter="Name"
+					className={classes.input}
+					value={roomValues.name}
+					onChange={handleChange('name')}
+				/>
+				<Input
+					addonAfter="Password"
+					className={classes.input}
+					value={roomValues.password}
+					onChange={handleChange('password')}
+					disabled
+				/>
+				<Input
+					addonAfter="Allow Inspectors"
+					className={classes.input}
+					value={roomValues.allowInspectors}
+					onChange={handleChange('allowInspectors')}
+					disabled
+				/>
+				<Input
+					addonAfter="Row #"
+					className={classes.input}
+					value={roomValues.row}
+					onChange={handleChange('row')}
+					disabled
+				/>
+				<Input
+					addonAfter="Col #"
+					className={classes.input}
+					value={roomValues.col}
+					onChange={handleChange('col')}
+					disabled
+				/>
+			</Modal>
 		</div>
 	);
 }
