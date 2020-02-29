@@ -102,3 +102,10 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Vim
+.*.sw*
+
+# Build
+public
+connect-4-mo-server/public
