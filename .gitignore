@@ -108,4 +108,5 @@ dist
 
 # Build
 public
-connect-4-mo-server/public
+connect-4-mo-server/public/
+connect-4-mo-server/public/*
