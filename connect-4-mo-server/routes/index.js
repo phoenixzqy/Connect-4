@@ -8,4 +8,8 @@ router.get('/test', function(req, res, next) {
   res.sendFile(path.join(publicPath,'/index.html'));
 });
 
+router.get('/connect4/*', function(req, res, next) {
+  res.sendFile(path.join(publicPath,'/index.html'));
+});
+
 module.exports = router;
