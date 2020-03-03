@@ -1,9 +1,8 @@
-const Users    = require('./users')
+const Users    = require('./io/users')
+const Warden   = require('./io/rooms')
 
-const LOGGER   = require('./logger')
-
-const LOGLEVEL = LOGGER.LOGLEVEL;
-const Logger   = LOGGER.ConsoleLogger;
+const LOGLEVEL = require('./io/logger').LOGLEVEL;
+const Logger   = require('./io/logger').ConsoleLogger;
 
 const {
 	EVENTS, 
@@ -54,13 +53,13 @@ function room_del(room) {
 	rooms.delete(room);
 }
 function parseRoomData(room) {
-	let result = {};
+	let result = {}; //rooms.
 	rooms.forEach((data, name) => {
 		if (room !== 'Lobby' && room !== name) return;
-		let rUsers = {};
+		let rUsers = {}; //rooms.users
 		result[name] = JSON.parse(JSON.stringify(data));
 		data.users.forEach((uid) => {
-			rUsers[uid] = users.data(uid);
+			rUsers[uid] = users.value(uid); //rooms.users + users.data
 		});
 		result[name].users = rUsers;
 	});
@@ -95,8 +94,6 @@ function room_join(io, socket, user, room) {
 	socket.emit('chat-updated', {...srvmsg, message: `Joined ${ room}`});
 	socket.broadcast.to(room).emit('chat-updated',
 		{...srvmsg, message: `${user.name} has joined.`});
-
-    users.dump();
 }
 
 function room_leave(
@@ -131,17 +128,6 @@ function room_move(io, socket, user, room) {
 
 function emit_err(socket, cmd, err) {
 	socket.emit(cmd, 'Error: ' + err);
-}
-
-function dump_all_rooms()
-{
-	rooms.forEach(function (users, room, rooms) {
-		console.log("room: %s.", room);
-		users.forEach(function (val) {
-			console.log("users: %s.", val.users);
-			console.log("board: %s.", val.board);
-		})
-	})
 }
 
 module.exports = function (http, app) {
