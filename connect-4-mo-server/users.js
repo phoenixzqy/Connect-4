@@ -29,9 +29,14 @@ class Users
 		Logger.log(`Deleted user ${name}.`, LOGLEVEL.DEBUG);
 	}
 
-	data(name)
+	value(key)
 	{
-		return this.users.get(name);
+		return this.users.get(key);
+	}
+
+	room(key)
+	{
+		return this.users.get(key).room;
 	}
 
 	contains(name)

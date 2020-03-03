@@ -1,7 +1,7 @@
 const ROOM_TYPE =
 {
 	CHAT:     0,
-	CONNECT4: 1
+	GAME:     1
 };
 
 const DIRECTION =

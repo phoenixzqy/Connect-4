@@ -1,37 +1,59 @@
-const CONSTANTS    = require('./constants')
 const Connect4Game = require('./game')
 
-const RoomType     = CONSTANTS.ROOM_TYPE;
-const Direction    = CONSTANTS.DIRECTION.
+const LOGGER   = require('./logger')
+
+const LOGLEVEL = LOGGER.LOGLEVEL;
+const Logger   = LOGGER.ConsoleLogger;
+
+const CONSTANTS    = require('./constants')
+const ROOMTYPE     = CONSTANTS.ROOM_TYPE;
+const DIRECTION    = CONSTANTS.DIRECTION.
 
 class Room
 {
-	constructor(type)
+	constructor(name, type)
 	{
 		this.type = type;
-		this.users = new Users();
+		this.name = name;
+		this.users = new Set();
 	}
 
-	addUser(name)
+	type() { return this.type; }
+
+	add(name)
 	{
 		users.add(name);
+		Logger.log(`Added user ${name} to room ${this.name}.`,
+			LOGLEVEL.DEBUG);
+	}
+
+	erase(name)
+	{
+		users.delete(name);
+		Logger.log(`Deleted user ${name} from room ${this.name}.`,
+			LOGLEVEL.DEBUG);
+	}
+
+	contains(name)
+	{
+		return users.has(name);
 	}
 }
 
 class ChatRoom extends Room
 {
-	constructor()
+	constructor(name)
 	{
-		super(CHAT);
+		super(name, ROOMTYPE.CHAT);
 	}
 }
 
-class Connect4Room extends Room
+class GameRoom extends Room
 {
-	constructor(width, height)
+	constructor(name, game)
 	{
-		super(CONNECT4);
-		this.game = new Connect4Game(width, height);
+		super(name, ROOMTYPE.GAME);
+		this.game = new Game(width, height);
 	}
 
 	changeBoard(width, height)
@@ -40,4 +62,8 @@ class Connect4Room extends Room
 	}
 }
 
-module.exports = Room;
+module.exports =
+{
+	ChatRoom,
+	Connect4Room
+};
