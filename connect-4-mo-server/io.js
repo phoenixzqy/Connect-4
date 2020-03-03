@@ -1,3 +1,10 @@
+const Users    = require('./users')
+
+const LOGGER   = require('./logger')
+
+const LOGLEVEL = LOGGER.LOGLEVEL;
+const Logger   = LOGGER.ConsoleLogger;
+
 const {
 	EVENTS, 
 	LOBBY
@@ -7,25 +14,26 @@ var srvmsg = {
 	ip: 'SERVER',
 	type: 'system'
 }
-var users  = new Map();
-var rooms  = new Map();
+
+var users = new Users();
+var rooms = new Map();
 
 room_add('Lobby');
 
 function conn_fini(socket) {
 	var uid = socket.client.id;
-	if (!users.has(uid)) {
+	if (!users.contains(socket.client.id)) {
 		console.log("Invalid client ID: " + uid + ".");
 		return -1;
 	}
 
-	room_leave(socket, users.get(uid));
-	users.delete(uid);
+	room_leave(socket, users.data(uid));
+	users.erase(uid);
 }
 
 function add_user(user) {
 	rooms.get(user.room).users.add(user.id);
-	users.set(user.id, user);
+	users.add(user.id, user);
 }
 
 function del_user(user) {
@@ -52,7 +60,7 @@ function parseRoomData(room) {
 		let rUsers = {};
 		result[name] = JSON.parse(JSON.stringify(data));
 		data.users.forEach((uid) => {
-			rUsers[uid] = users.get(uid);
+			rUsers[uid] = users.data(uid);
 		});
 		result[name].users = rUsers;
 	});
@@ -65,7 +73,7 @@ function room_join(io, socket, user, room) {
 		return -1;
 
 	// init user
-	if (!users.has(user.id)) {
+	if (!users.contains(user.id)) {
 		socket.emit('user-initiated', user);
 	}
 	
@@ -87,6 +95,8 @@ function room_join(io, socket, user, room) {
 	socket.emit('chat-updated', {...srvmsg, message: `Joined ${ room}`});
 	socket.broadcast.to(room).emit('chat-updated',
 		{...srvmsg, message: `${user.name} has joined.`});
+
+    users.dump();
 }
 
 function room_leave(
@@ -156,9 +166,9 @@ module.exports = function (http, app) {
 		socket.on('room-create', function(data) {
 			//TODO need fine tune - separate logic here
 			//if doesnt even have user, exception, otherwise error
-			if (!users.has(socket.client.id)
+			if (!users.contains(socket.client.id)
 				|| users.get(socket.client.id).room !== 'Lobby'
-				|| !rooms.get('Lobby').users.has(socket.client.id)) {
+				|| !rooms.get('Lobby').users.contains(socket.client.id)) {
 				emit_err(socket, 'ret-clt', 'Cannot create room ' + data.room + '.');
 				return -1;
 			}
