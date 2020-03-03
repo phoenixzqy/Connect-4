@@ -7,7 +7,6 @@ const Logger   = LOGGER.ConsoleLogger;
 
 const CONSTANTS    = require('./constants')
 const ROOMTYPE     = CONSTANTS.ROOM_TYPE;
-const DIRECTION    = CONSTANTS.DIRECTION.
 
 class Room
 {
@@ -23,14 +22,16 @@ class Room
 	add(name)
 	{
 		users.add(name);
-		Logger.log(`Added user ${name} to room ${this.name}.`,
+		Logger.log(
+			`Added user ${name} to room ${this.name}.`,
 			LOGLEVEL.DEBUG);
 	}
 
 	erase(name)
 	{
 		users.delete(name);
-		Logger.log(`Deleted user ${name} from room ${this.name}.`,
+		Logger.log(
+			`Deleted user ${name} from room ${this.name}.`,
 			LOGLEVEL.DEBUG);
 	}
 
@@ -53,10 +54,18 @@ class GameRoom extends Room
 	constructor(name, game)
 	{
 		super(name, ROOMTYPE.GAME);
-		this.game = new Game(width, height);
+		this.game = game;
+	}
+}
+
+class Connect4Room extends GameRoom
+{
+	constructor(name, game)
+	{
+		super(name, game);
 	}
 
-	changeBoard(width, height)
+	updateBoard(width, height)
 	{
 		this.game.changeBoard(width, height);
 	}

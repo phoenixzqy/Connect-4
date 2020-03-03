@@ -1,4 +1,7 @@
-const Users    = require('./users')
+const Users       = require('./users')
+
+const RoomFactory = require('./roomFactory'); 
+
 const
 { 
 	ChatRoom,
@@ -16,15 +19,36 @@ class RoomsManager
 {
 	constructor()
 	{
-		this.rooms = new Map();
-		this.users = new Users();
+		this.rooms   = new Map();
+		this.users   = new Users();
+		this.factory = new RoomFactory();
 	}
 
 	room(user_name) { return this.users.room(user_name); }
 
+	addRoomType()
+	{
+		this.factory.addChatFactory(game);
+	}
+
+	addRoomType(game)
+	{
+		this.factory.addGameFactory(game);
+	}
+
 	createUser()
 	{
 		users.add(user_name, user_data);
+	}
+
+	roomCreate(room_name, room_type, room_data, user_name, user_data)
+	{
+		if (_addRoom(room_name, room_type))
+			return -1;
+
+		return roomJoin(room_name, user_name, user_data);
+
+		let broker = new SocketBroker(room.type());
 	}
 
 	roomJoin(room_name, user_name, user_data)
@@ -41,8 +65,11 @@ class RoomsManager
 			return -1;
 		}
 
-		this.rooms.get(room_name).add(user_name);
+		let room = this.rooms.get(room_name);
+
+		rooms.add(user_name);
 		users.add(user_name, user_data);
+
 		return 0;
 	}
 
@@ -71,17 +98,18 @@ class RoomsManager
 		return 0;
 	}
 
-	addChatRoom(name)
+	_addRoom(name, type)
 	{
-		this.rooms.add(new ChatRoom(name));
+		let new_room = this.factory.build(name);
+
+		if (new_room == null)
+			return -1;
+
+		this.rooms.set(name, new_room);
+		return 0;
 	}
 
-	addGameRoom(name, game)
-	{
-		this.rooms.add(new GameRoom(name, game));
-	}
-
-	delRoom(name)
+	_delRoom(name)
 	{
 		this.rooms.delete(name);
 	}
