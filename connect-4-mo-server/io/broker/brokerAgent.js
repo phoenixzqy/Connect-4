@@ -8,7 +8,7 @@ const ROOMTYPE   = require('../constants').ROOM_TYPE;
 
 class BrokerAgent
 {
-	constructor(io)
+	constructor()
 	{
 		this.brokers = new Map();
 	}
@@ -18,25 +18,45 @@ class BrokerAgent
 		switch (room_type)
 		{
 			case ROOMTYPE.CHAT:
-				brokers.set(room_type, new chatBroker(io)); break;
+				this.brokers.set(room_type, new ChatBroker(io));
+				break;
 			case ROOMTYPE.RPS:
 			case ROOMTYPE.CONNECT4:
-				brokers.set(room_type, new Broker(io)); break;
+				this.brokers.set(room_type, new Broker(io));
+				break;
 			default:
+				Logger.log(`Invalid room type ${room_type}.`, LOGLEVEL.ERR);
 				return -1;
 		}
 
+		Logger.log(
+			`Added broker for room type ${room_type}.`,
+			LOGLEVEL.INFO);
 		return 0;
 	}
 
 	roomJoined(room_type, room_name, user_name, rooms_data)
 	{
-		brokers.get(room_type).roomJoined(room_name, user_name, rooms_data);
+		if (!this.brokers.has(room_type))
+		{
+			Logger.log(`Invalid room type ${room_type}.`, LOGLEVEL.ERR);
+			return -1;
+		}
+
+		return this.brokers.get(room_type).roomJoined(
+			room_name, user_name, rooms_data);
 	}
 
 	roomLeft(room_type, room_name, user_name, rooms_data)
 	{
-		brokers.get(room_type).roomLeft(room_name, user_name, rooms_data);
+		if (!this.brokers.has(room_type))
+		{
+			Logger.log(`Invalid room type ${room_type}.`, LOGLEVEL.ERR);
+			return -1;
+		}
+
+		return this.brokers.get(room_type).roomLeft(
+			room_name, user_name, rooms_data);
 	}
 }
 

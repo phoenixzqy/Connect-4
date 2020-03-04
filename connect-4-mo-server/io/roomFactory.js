@@ -46,7 +46,7 @@ class RoomFactory
 	{
 		this.factory.set(game.type, new GameRoomFactory(game));
 		Logger.log(
-			`Added factory for game room of type ${game.type}.`,
+			`Added factory for game room type ${game.type}.`,
 			LOGLEVEL.INFO);
 	}
 

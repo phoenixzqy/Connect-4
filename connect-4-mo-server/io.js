@@ -1,200 +1,122 @@
-const Users    = require('./io/users')
-const Warden   = require('./io/rooms')
+const Warden = require('./io/rooms');
 
 const LOGLEVEL = require('./io/logger').LOGLEVEL;
 const Logger   = require('./io/logger').ConsoleLogger;
 
-const {
-	EVENTS, 
-	LOBBY
-} = require('../connect-4-mo-client/define')
+const ROOMTYPE = require('./io/constants').ROOM_TYPE;
 
-var srvmsg = {
-	ip: 'SERVER',
-	type: 'system'
-}
+const EVENTS   = require('../connect-4-mo-client/define').EVENTS;
 
-var users = new Users();
-var rooms = new Map();
-
-room_add('Lobby');
-
-function conn_fini(socket) {
-	var uid = socket.client.id;
-	if (!users.contains(socket.client.id)) {
-		console.log("Invalid client ID: " + uid + ".");
-		return -1;
-	}
-
-	room_leave(socket, users.data(uid));
-	users.erase(uid);
-}
-
-function add_user(user) {
-	rooms.get(user.room).users.add(user.id);
-	users.add(user.id, user);
-}
-
-function del_user(user) {
-	let room = user.room;
-	rooms.get(room).users.delete(user.id);
-	// reomove empty room except Lobby.
-	if (room !== 'Lobby' && rooms.get(room).users.size === 0) {
-		room_del(room);
-	}
-}
-
-function room_add(room) {
-	if (rooms.has(room)) return -1;
-	rooms.set(room, {users: new Set(), board: new Array()});
-}
-
-function room_del(room) {
-	rooms.delete(room);
-}
-function parseRoomData(room) {
-	let result = {}; //rooms.
-	rooms.forEach((data, name) => {
-		if (room !== 'Lobby' && room !== name) return;
-		let rUsers = {}; //rooms.users
-		result[name] = JSON.parse(JSON.stringify(data));
-		data.users.forEach((uid) => {
-			rUsers[uid] = users.value(uid); //rooms.users + users.data
-		});
-		result[name].users = rUsers;
-	});
-	return result;
-}
-//XXX let it throw instead?
-function room_join(io, socket, user, room) {
-	user.room = room;
-	if (!rooms.has(room))
-		return -1;
-
-	// init user
-	if (!users.contains(user.id)) {
-		socket.emit('user-initiated', user);
-	}
-	
-	add_user(user);
-
-	socket.room = room;
-	socket.join(room);
-	io.in(room).emit(
-		'user-updated', 
-		{ rooms: parseRoomData(room), currentRoom: room }, 
-	);
-	if (room !== 'Lobby') {
-		io.in('Lobby').emit(
-			'user-updated', 
-			{ rooms: parseRoomData('Lobby'), currentRoom: 'Lobby' }, 
-		);
-	}
-
-	socket.emit('chat-updated', {...srvmsg, message: `Joined ${ room}`});
-	socket.broadcast.to(room).emit('chat-updated',
-		{...srvmsg, message: `${user.name} has joined.`});
-}
-
-function room_leave(
-	socket, 
-	user, 
-	shouldBroadcast = true // in case of "room_move", user will get updates in room_join right after room_leave. so no needs to update users twice
-) {
-	var room = socket.room;
-	if (!rooms.has(room))
-		return -1;
-
-	del_user(user);
-	socket.leave(room);
-	socket.broadcast.to(room).emit(
-		'user-updated',
-		{ rooms: parseRoomData(room), currentRoom: room }, 
-	);
-	socket.broadcast.to(room).emit('chat-updated',
-		{...srvmsg, message: `${user.name} has left.`});
-}
-
-function room_move(io, socket, user, room) {
-	console.log(room)
-	if (room_leave(socket, user, false) < 0
-		|| room_join(io, socket, user, room) < 0) {
-		console.log('room_move tailed')
-		return -1;
-	}
-	
-	return 0;
-}
-
-function emit_err(socket, cmd, err) {
+function emit_err(socket, cmd, err)
+{
 	socket.emit(cmd, 'Error: ' + err);
 }
 
-module.exports = function (http, app) {
-	var io = require('socket.io')(http);
+module.exports = function (http, app)
+{
+	var io     = require('socket.io')(http);
+	var warden = new Warden(io);
 
-	io.on('connection', function(socket) {
-		socket.on('join-lobby', function(userData) {
-			room_join(io, socket, 
-				{
-					...userData,
-					id: socket.client.id,
-					ip: socket.request.connection.remoteAddress
-				},
-				'Lobby'
-			);
+	io.on('connection', function(socket)
+	{
+		socket.on('join-lobby', function(data)
+		{
+			let user_name = socket.client.id;
+			let user_data =
+			{
+				...data,
+				id:   socket.client.id,
+				ip:   socket.request.connection.remoteAddress
+			};
+
+			Logger.log(
+					`Connecting ${user_name} to server.`,
+					LOGLEVEL.INFO);
+
+			Logger.log(
+					`Total connections: ${Object.keys(io.sockets.connected).length}.`,
+					LOGLEVEL.DEBUG);
+
+			warden.addUser(user_name, user_data);
+			warden.lobbyJoin(ROOMTYPE.CHAT, 'Lobby', user_name);
+
+			warden.dumpRooms();
 		});
 
-		socket.on('disconnect', function() {
-			conn_fini(socket);
-		});
+		socket.on('disconnect', function(message)
+		{
+			let user_name = socket.client.id;
 
-		socket.on('room-create', function(data) {
-			//TODO need fine tune - separate logic here
-			//if doesnt even have user, exception, otherwise error
-			if (!users.contains(socket.client.id)
-				|| users.get(socket.client.id).room !== 'Lobby'
-				|| !rooms.get('Lobby').users.contains(socket.client.id)) {
-				emit_err(socket, 'ret-clt', 'Cannot create room ' + data.room + '.');
+			Logger.log(
+					`Disconnecting ${user_name} from server.`,
+					LOGLEVEL.INFO);
+
+			if (!warden.containsUser(user_name))
+			{
+				Logger.log(`Failed to find user ${user_name}.`, LOGLEVEL.ERR);
 				return -1;
 			}
 
-			//XXX change to handle by exception?
-			if (room_add(data.room) < 0) {
+			if (warden.roomLeave(ROOMTYPE.CHAT, user_name))
+				Logger.log(`Failed to evict user ${user_name}.`, LOGLEVEL.ERR);
+
+			warden.delUser(user_name);
+			return 0;
+		});
+
+		socket.on('room-create', function(data)
+		{
+			if (warden.addRoom(ROOMTYPE.CHAT, data.room) < 0)
+			{
 				emit_err(socket, 'ret-err', 'Room ' + data.room + ' already exists.');
 				return -1;
 			}
 
-			if (room_move(io, socket, users.get(socket.client.id), data.room) < 0) {
+			//TODO add return code for error handling
+			if (warden.roomMove(ROOMTYPE.CHAT, data.room, socket.client.id) < 0)
+			{
 				emit_err(socket, 'ret-svr',
 					'Cannot move to created room ' + data.room + '.');
-				if (room_del(data.room) < 0)
+				if (warden.delRoom(data.room) < 0)	//XXX rollback
 					emit_err(socket, 'ret-svr',
 						'Failed to remove room ' + data.room + '.');
 				return -1;
 			}
+
+			warden.dumpRooms();
+			return 0;
 		});
 
-		socket.on('room-join', function(data) {
-			//XXX DRY
-			if (!users.has(socket.client.id)) {
-				emit_err(socket, 'ret-clt', 'Cannot join room ' + data.room + '.');
-				return -1;
-			}
-
-			if (room_move(io, socket, users.get(socket.client.id), data.room) < 0) {
+		socket.on('room-join', function(data)
+		{
+			if (warden.roomMove(ROOMTYPE.CHAT, data.room, socket.client.id) < 0)
+			{
 				emit_err(socket, 'ret-err', 'Cannot join room ' + data.room + '.');
 				return -1;
 			}
+
+			warden.dumpRooms();
+			return 0;
 		});
  
-		socket.on('chat-submit', function(msg) {
-			let body = {
-				message: msg, 
-				user: users.get(socket.client.id),
-				type: "message"
-			};
-			io.sockets.in(socket.room).emit('chat-updated', body);
+		socket.on('chat-submit', function(msg)
+		{
+			let name = socket.client.id;
+			let data = warden.userValue(name);
+
+			if (data === undefined)
+			{
+				emit_err(socket, 'ret-svr', `Cannot find user ${name}.`);
+				return -1;
+			}
+
+			io.sockets.in(socket.room).emit(
+					'chat-updated', 
+					{
+						message: msg,
+						user:    data,
+						type:    "message"
+					});
 		});
 	});
 

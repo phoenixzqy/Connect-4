@@ -18,21 +18,27 @@ class ChatBroker extends Broker
 
 	roomJoined(room_name, user_name, rooms_data)
 	{
-		super.roomJoined(room_name, user_name, rooms_data);
+		if (super.roomJoined(room_name, user_name, rooms_data) < 0)
+			return -1;
 
-		send(user_name, 'chat-updated',
-			{...srvmsg, message: `Joined ${room_name}.`});
+		super.send(user_name, 'chat-updated',
+			{...SRVMSG, message: `Joined ${room_name}.`});
 
-		broadcast(user_name, room_name, 'chat-updated',
-			{...srvmsg, message: `${user_name} has joined.`});
+		super.broadcast(user_name, room_name, 'chat-updated',
+			{...SRVMSG, message: `${user_name} has joined.`});
+
+		return 0;
 	}
 
 	roomLeft(room_name, user_name, rooms_data)
 	{
-		super.roomLeft(room_name, user_name, rooms_data);
+		if (super.roomLeft(room_name, user_name, rooms_data) < 0)
+			return -1;
 
-		broadcast(user_name, room_name, 'chat-updated',
-			{...srvmsg, message: `${user_name} has left.`});
+		super.broadcast(user_name, room_name, 'chat-updated',
+			{...SRVMSG, message: `${user_name} has left.`});
+
+		return 0;
 	}
 }
 

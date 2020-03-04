@@ -15,7 +15,7 @@ const ROOMTYPE    = require('./constants').ROOM_TYPE;
 
 class Warden
 {
-	constructor()
+	constructor(io)
 	{
 		this.rooms   = new Map();
 		this.users   = new Users();
@@ -23,14 +23,71 @@ class Warden
 		this.broker  = new BrokerAgent();
 
 		this.factory.addChatFactory();
+
+		this.broker.addBroker(ROOMTYPE.CHAT, io);
+
+		this.addRoom(ROOMTYPE.CHAT, 'Lobby');
 	}
 
-	room(user_name) { return this.users.room(user_name); }
-	rooms()         { return JSON.parse(JSON.stringify(this.rooms)); }
+	userRoom(user_name) { return this.users.room(user_name); }
 
-	createUser()
+	toJSON()
+	{ 
+		const obj = {};
+		this.rooms.forEach(function (value, key)
+		{ obj[key] = value; });
+
+		return obj;
+	}
+
+	toRoomJSON(room_name)
 	{
-		this.users.add(user_name, user_data);
+		const obj = {};
+		obj[room_name] = this.rooms.get(room_name);
+		return obj;
+	}
+
+	dumpUsers()
+	{
+		this.users.dump();
+	}
+
+	dumpRooms()
+	{
+		Logger.log(`Rooms size: ${this.rooms.size}.`, LOGLEVEL.DEBUG);
+
+		this.rooms.forEach(function (value, key)
+		{
+			Logger.log(
+				`room: ${key}, users size: ${value.size()}`,
+				LOGLEVEL.DEBUG);
+			JSON.stringify(value.dump());
+		});
+	}
+
+	addBroker(type, io)
+	{
+		this.broker.addBroker(type, io);
+	}
+
+	containsUser(name)
+	{
+		return this.users.contains(name);
+	}
+
+	userValue(name)
+	{
+		return this.users.value(name);
+	}
+
+	addUser(name, data)
+	{
+		this.users.add(name, data);
+	}
+
+	delUser(name)
+	{
+		this.users.erase(name);
 	}
 
 	addGameType(game)
@@ -38,9 +95,19 @@ class Warden
 		this.factory.addGameFactory(game);
 	}
 
-	addRoom(name, type)
+	addRoom(type, name)
 	{
-		this.rooms.add(this.factory.build(name, type));
+		if (this.rooms.has(name))
+		{
+			Logger.log(
+				`Failed to add room ${name} - room already exists.`,
+				LOGLEVEL.WARN);
+			return -1;
+		}
+
+		Logger.log(`added room ${name} of type ${type}`, LOGLEVEL.INFO);
+		this.rooms.set(name, this.factory.build(name, type));
+		return 0;
 	}
 
 	delRoom(name)
@@ -48,48 +115,88 @@ class Warden
 		this.rooms.delete(name);
 	}
 
-	roomJoin(room_name, user_name, user_data)
+	lobbyJoin(room_type, room_name, user_name)
 	{
+		//FIXME check room_type first against broker and factory
+		let user_data = this.users.value(user_name);
+
 		if (!this.rooms.has(room_name))
 		{
 			Logger.log(`Failed to find room ${room_name}.`, LOGLEVEL.WARN);
 			return -1;
 		}
 
-		if (!this.users.contains(user_name)
-			|| !this.rooms.get(room_name).contains(user_name))
+		if (user_data === undefined
+			|| !this.users.contains(user_name))
 		{
 			Logger.log(`Failed to find user ${user_name}.`, LOGLEVEL.WARN);
 			return -1;
 		}
 
 		this.rooms.get(room_name).add(user_name, user_data);
-		this.users.add(user_name, user_data);
+		this.users.join(user_name, room_name);
 
-		this.broker.roomJoined(room_type, room_name, user_name, rooms());
+		this.broker.roomJoined(room_type, room_name, user_name, this.toJSON());
 		return 0;
 	}
 
-	roomLeave(user_name)
+	roomJoin(room_type, room_name, user_name, user_data)
 	{
-		let user_room = this.users.room(user_name);
+		Logger.log(
+			`User ${user_name} joining room ${room_name}.`,
+			LOGLEVEL.DEBUG);
 
-		if (!this.rooms.has(user_room))
+		this.rooms.get(room_name).add(user_name, user_data);
+		this.users.join(user_name, room_name);
+
+		this.broker.roomJoined(
+			room_type, room_name, user_name, this.toRoomJSON(room_name));
+		return 0;
+	}
+
+	roomLeave(room_type, user_name)
+	{
+		let user_room = this.userRoom(user_name);
+
+		Logger.log(
+			`Evicting user ${user_name} from room ${user_room}.`,
+			LOGLEVEL.DEBUG);
+
+		if (user_room === undefined
+		|| !this.rooms.get(user_room).contains(user_name))
+			return -1;
+
+		this.users.exit(user_name);
+		this.rooms.get(user_room).erase(user_name);
+
+		if (user_room === 'Lobby' || this.rooms.get(user_room).size() !== 0)
+			this.broker.roomLeft(room_type, user_room, user_name, this.toRoomJSON(user_room));
+		else
+			this.rooms.delete(user_room);
+
+		return 0;
+	}
+
+	roomMove(room_type, dst_room_name, user_name)
+	{
+		//FIXME check room_type first against broker and factory
+		let user_data = this.users.value(user_name);
+
+		if (!this.rooms.has(dst_room_name))
 		{
-			Logger.log(`Failed to find room ${user_room}.`, LOGLEVEL.WARN);
+			Logger.log(`Failed to find room ${dst_room_name}.`, LOGLEVEL.WARN);
 			return -1;
 		}
 
-		this.rooms.get(user_room).users.erase(user_name);
+		if (!this.users.contains(user_name))
+		{
+			Logger.log(`Failed to find user ${user_name}.`, LOGLEVEL.WARN);
+			return -1;
+		}
 
-		this.broker.roomJoined(room_type, room_name, user_name, rooms());
-		return 0;
-	}
-
-	roomMove(dst_room_name, user_name, user_data)
-	{
-		if (roomLeave(user_name) < 0
-			|| roomJoin(dst_room_name, user_name, user_data < 0))
+		//FIXME rollback if roomJoin fails?
+		if (this.roomLeave(room_type, user_name) < 0
+			|| this.roomJoin(room_type, dst_room_name, user_name, user_data) < 0)
 			{
 				Logger.log(
 					`Failed to move user ${user_name} `
@@ -101,3 +208,5 @@ class Warden
 		return 0;
 	}
 }
+
+module.exports = Warden;

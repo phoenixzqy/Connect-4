@@ -10,12 +10,12 @@ class Broker
 
 	send(user, event, data)
 	{
-		io.sockets.socket[user].emit(event, data);
+		this.io.sockets.connected[user].emit(event, data);
 	}
 
 	broadcast(user, room, event, data)
 	{
-		io.sockets.socket[user].broadcast.to(room).emit(event, data);
+		this.io.sockets.connected[user].broadcast.to(room).emit(event, data);
 	}
 
 	announce(room, event, data)
@@ -25,17 +25,42 @@ class Broker
 
 	roomJoined(room_name, user_name, rooms_data)
 	{
-		io.sockets.socket[user_name].room = room_name;
-		io.sockets.socket[user_name].join(room);
+		Logger.log(
+			`User ${user_name} joined room ${room_name}.`,
+			LOGLEVEL.DEBUG);
 
-		announce(room_name, 'user-updated', rooms_data);
+		this.io.sockets.connected[user_name].room = room_name;
+		this.io.sockets.connected[user_name].join(room_name);
+
+		this.announce(
+			room_name,
+			'user-updated',
+			{ rooms: rooms_data, currentRoom: room_name });
+		return 0;
 	}
 
 	roomLeft(room_name, user_name, rooms_data)
 	{
-		io.sockets.socket[user_name].leave(room);
+		Logger.log(
+			`User ${user_name} left room ${room_name}.`,
+			LOGLEVEL.DEBUG);
 
-		broadcast(room_name, user_name, 'user-updated', rooms_data);
+		if (this.io.sockets.connected[user_name] === undefined)
+		{
+			Logger.log(
+				`Lost connection to user ${user_name}.`,
+				LOGLEVEL.NOTICE);
+			return -1;
+		}
+
+		this.io.sockets.connected[user_name].leave(room_name);
+
+		this.broadcast(
+			user_name,
+			room_name,
+			'user-updated',
+			{ rooms: rooms_data, currentRoom: room_name });
+		return 0;
 	}
 }
 

@@ -14,32 +14,42 @@ class Users
 
 	size()
 	{
-		return this.users.size();
+		return this.users.size;
 	}
 
 	add(name, data)
 	{
-		this.users.set(name, data);
-		Logger.log(`Added user ${name}.`, LOGLEVEL.DEBUG);
+		this.users.set(name, {...data, room: null});
+		//Logger.log(`Added user ${name}.`, LOGLEVEL.DEBUG);
 	}
 
 	erase(name)
 	{
 		this.users.delete(name);
-		Logger.log(`Deleted user ${name}.`, LOGLEVEL.DEBUG);
+		//Logger.log(`Deleted user ${name}.`, LOGLEVEL.DEBUG);
 	}
 
-	value(key)
+	join(user_name, room_name)
 	{
-		return this.users.get(key);
+		this.value(user_name).room = room_name;
 	}
 
-	room(key)
+	exit(name)
 	{
-		if (!this.users.has(key))
+		this.value(name).room = null;
+	}
+
+	value(name)
+	{
+		return this.users.get(name);
+	}
+
+	room(name)
+	{
+		if (!this.contains(name))
 			return -1;
 
-		return this.users.get(key).room;
+		return this.value(name).room;
 	}
 
 	contains(name)
@@ -47,12 +57,21 @@ class Users
 		return this.users.has(name);
 	}
 
+	toJSON()
+	{
+		const obj = {};
+		this.users.forEach(function (value, key)
+		{ obj[key] = value; });
+
+		return obj;
+	}
+
 	dump()
 	{
 		this.users.forEach(function (value, key)
 		{
-			Logger.log(`name: ${key}, data: ${value}.`, LOGLEVEL.INFO);
-		})
+			Logger.log(`name: ${key}, data: ${JSON.stringify(value)}.`, LOGLEVEL.DEBUG);
+		});
 	}
 }
 
