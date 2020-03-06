@@ -13,7 +13,7 @@
 
 <rooms>           := <room> | <room> <rooms>
 <room>            := <roomName> <users>
-<users>           := <userName> <userData> <users> | ""
+<users>           := <user> <users> | ""
 <user>            := <userData> <userRooms>
 <userRooms>       := <roomName> | <roomName> <userRooms>
 
