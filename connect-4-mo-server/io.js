@@ -1,11 +1,12 @@
-const Warden = require('./io/rooms');
+const BrokerAgent = require('./io/broker/brokerAgent');
+const Warden      = require('./io/rooms');
 
-const LOGLEVEL = require('./io/logger').LOGLEVEL;
-const Logger   = require('./io/logger').ConsoleLogger;
+const LOGLEVEL    = require('./io/logger').LOGLEVEL;
+const Logger      = require('./io/logger').ConsoleLogger;
 
-const ROOMTYPE = require('./io/constants').ROOM_TYPE;
+const ROOMTYPE    = require('./io/constants').ROOM_TYPE;
 
-const EVENTS   = require('../connect-4-mo-client/define').EVENTS;
+const EVENTS      = require('../connect-4-mo-client/define').EVENTS;
 
 function emit_err(socket, cmd, err)
 {
@@ -16,8 +17,12 @@ module.exports = function (http, app)
 {
 	var io     = require('socket.io')(http);
 	var warden = new Warden(io);
+	var broker = new BrokerAgent(); //not used for now
 
-	io.on('connection', function(socket)
+	warden.addBroker(ROOMTYPE.CHAT, io);
+	warden.addRoom(ROOMTYPE.CHAT, 'Lobby');
+
+	io.on('connect', function(socket)
 	{
 		socket.on('join-lobby', function(data)
 		{
@@ -110,8 +115,8 @@ module.exports = function (http, app)
 				return -1;
 			}
 
-			io.sockets.in(socket.room).emit(
-					'chat-updated', 
+			io.sockets.in(socket.rooms).emit(
+					'chat-updated',
 					{
 						message: msg,
 						user:    data,

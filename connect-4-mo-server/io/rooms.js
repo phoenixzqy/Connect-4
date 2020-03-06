@@ -23,10 +23,6 @@ class Warden
 		this.broker  = new BrokerAgent();
 
 		this.factory.addChatFactory();
-
-		this.broker.addBroker(ROOMTYPE.CHAT, io);
-
-		this.addRoom(ROOMTYPE.CHAT, 'Lobby');
 	}
 
 	userRoom(user_name) { return this.users.room(user_name); }
