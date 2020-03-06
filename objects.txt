@@ -2,11 +2,9 @@
 <userName>        := 'userName:' <string>
 <userAvatar>      := 'userAvatar:' <int>
 
-<userData>        := <userInfo> <userIP> <userID> <userRooms>
+<userData>        := <userInfo> <userIP> <userID>
 <userIP>          := 'userIP:' <string>
 <userID>          := 'userID:' <int>
-<userRooms>       := <roomName> | <roomName> <userRooms>
-<roomName>        := 'roomName:' <string>
 
 <roomInfo>        := <roomName> ( <chatRoomInfo> | <gameRoomInfo> )
 <chatRoomInfo>    := 'type:' 0
@@ -16,6 +14,8 @@
 <rooms>           := <room> | <room> <rooms>
 <room>            := <roomName> <users>
 <users>           := <userName> <userData> <users> | ""
+<user>            := <userData> <userRooms>
+<userRooms>       := <roomName> | <roomName> <userRooms>
 
 <action>          := <emoteAction> <userData> | <gameAction> <userData>
 <gameAction>      := <gameStateAction> | <gameplayAction>

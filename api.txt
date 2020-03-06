@@ -115,14 +115,22 @@ side:    Update game state of all users in (game) room.
 *                               SERVER EVENTS                                 *
 * =========================================================================== *
 
-event:   ROOM_UPDATED
-brief:   Server changed user's room.
+event:   USER_UPDATED
+brief:   Server changed room's users.
 param:   object: rooms          "rooms" object
 
 * =========================================================================== *
 
-event:   USER_UPDATED
-brief:   Server changed room's users.
+event:   ROOM_INVITED
+brief:   Server send room invitation to a user.
+param:   string: roomName       name of the room
+         string: token          invitation token
+            int: timeout        timeout in seconds
+
+* =========================================================================== *
+
+event:   ROOM_UPDATED
+brief:   Server changed user's room.
 param:   object: rooms          "rooms" object
 
 * =========================================================================== *
@@ -132,7 +140,7 @@ brief:   Server updated chat logs for room(s).
 param:   string: message        message
             int: type           message type
          object: userData       "userData" object
-         string: currentRoom    the room to update chat
+         object: rooms          "rooms" object
 
 * =========================================================================== *
 
