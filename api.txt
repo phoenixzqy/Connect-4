@@ -1,0 +1,83 @@
+* =========================================================================== *
+*                               CLIENT EVENTS                                 *
+* =========================================================================== *
+
+event:   CONNECT
+brief:   Client initiates connection.
+param:   object: socket			"socket" object
+
+* =========================================================================== *
+
+event:   DISCONNECT
+brief:   Client initiates disconnection.
+param:   string: message		disconnect message
+
+* =========================================================================== *
+
+event:   LOBBY_JOIN
+brief:   Client initial join to lobby(default room).
+param:   object: userInfo		"userInfo" object
+inovke:  USER_UPDATED, CHAT_UPDATED
+
+* =========================================================================== *
+
+event:   CHAT_CREATE
+brief:   Client creates a new chat room.
+param:   string: roomName		name of the room
+inovke:  USER_UPDATED, CHAT_UPDATED
+
+* =========================================================================== *
+
+event:   GAME_CREATE
+brief:   Client creates a new game room.
+param:   string: roomName		name of the room
+         object: gameInfo		"gameInfo" object
+inovke:  USER_UPDATED, CHAT_UPDATED
+
+* =========================================================================== *
+
+event:   CHAT_SUBMIT
+brief:   Client submits a chat message.
+param:   string: message		chat message
+         string: roomName		the room for client to submit the message to
+inovke:  CHAT_UPDATED
+
+* =========================================================================== *
+
+event:   GAME_SUBMIT
+brief:   Client submits a game move.
+param:   object: action			"action" object
+         string: roomName		name of the room
+inovke:  GAME_UPDATED
+
+
+
+* =========================================================================== *
+*                               SERVER EVENTS                                 *
+* =========================================================================== *
+
+trigger: LOBBY_JOIN, CHAT_CREATE, GAME_CREATE
+event:   USER_UPDATED
+brief:   Server changed user's room.
+param:   object: rooms			"rooms" object
+         string: currentRoom	the room to update user list
+inovke:  USER_UPDATED, CHAT_UPDATED
+
+* =========================================================================== *
+
+trigger: CHAT_UPDATED
+event:   LOBBY_JOIN, CHAT_CREATE, GAME_CREATE, CHAT_SUBMIT
+brief:   Server updated chat logs for room(s).
+param:   string: message		chat message
+         object: userData		"userData" object
+		 stirng: currentRoom	the room to update chat
+
+* =========================================================================== *
+
+trigger: GAME_UPDATED
+event:   GAME_SUBMIT
+brief:   Server updated game state.
+param:   object: players		"players" object
+         object: gameData		"gameData" object
+
+* =========================================================================== *
