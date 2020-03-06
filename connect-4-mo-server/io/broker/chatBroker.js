@@ -16,9 +16,12 @@ class ChatBroker extends Broker
 		super(io);
 	}
 
-	roomJoined(room_name, user_name, rooms_data)
+	_socket_room_join_callback(room_name, user_name, rooms_data)
 	{
-		if (super.roomJoined(room_name, user_name, rooms_data) < 0)
+		if (super._socket_room_join_callback(
+			room_name,
+			user_name,
+			rooms_data) < 0)
 			return -1;
 
 		super.send(user_name, 'chat-updated',
@@ -30,9 +33,12 @@ class ChatBroker extends Broker
 		return 0;
 	}
 
-	roomLeft(room_name, user_name, rooms_data)
+	_socket_room_leave_callback(room_name, user_name, rooms_data)
 	{
-		if (super.roomLeft(room_name, user_name, rooms_data) < 0)
+		if (super._socket_room_leave_callback(
+			room_name,
+			user_name,
+			rooms_data) < 0)
 			return -1;
 
 		super.broadcast(user_name, room_name, 'chat-updated',

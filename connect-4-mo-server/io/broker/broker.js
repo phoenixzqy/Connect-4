@@ -23,19 +23,62 @@ class Broker
 		this.io.in(room).emit(event, data);
 	}
 
+	_socket_room_join_callback(room_name, user_name, rooms_data)
+	{
+		this.announce(
+			room_name,
+			'user-updated',
+			{ rooms: rooms_data, currentRoom: room_name });
+	}
+
+	_socket_room_leave_callback(room_name, user_name, rooms_data)
+	{
+		this.broadcast(
+			user_name,
+			room_name,
+			'user-updated',
+			{ rooms: rooms_data, currentRoom: room_name });
+	}
+
+	_socket_room_join(room_name, user_name, rooms_data)
+	{
+		this.io.sockets.connected[user_name].join(room_name, (err) =>
+		{
+			if (err != null)
+			{
+				Logger.log(
+					`User ${user_name} failed to join room ${room_name}`,
+				LOGLEVEL.ERROR);
+				return;
+			}
+
+			this._socket_room_join_callback(room_name, user_name, rooms_data);
+		});
+	}
+
+	_socket_room_leave(room_name, user_name, rooms_data)
+	{
+		this.io.sockets.connected[user_name].leave(room_name, (err) =>
+		{
+			if (err != null)
+			{
+				Logger.log(
+					`User ${user_name} failed to leave room ${room_name}`,
+				LOGLEVEL.ERROR);
+				return;
+			}
+
+			this._socket_room_leave_callback(room_name, user_name, rooms_data);
+		});
+	}
+
 	roomJoined(room_name, user_name, rooms_data)
 	{
 		Logger.log(
 			`User ${user_name} joined room ${room_name}.`,
 			LOGLEVEL.DEBUG);
 
-		this.io.sockets.connected[user_name].room = room_name;
-		this.io.sockets.connected[user_name].join(room_name);
-
-		this.announce(
-			room_name,
-			'user-updated',
-			{ rooms: rooms_data, currentRoom: room_name });
+		this._socket_room_join(room_name, user_name, rooms_data);
 		return 0;
 	}
 
@@ -53,13 +96,7 @@ class Broker
 			return -1;
 		}
 
-		this.io.sockets.connected[user_name].leave(room_name);
-
-		this.broadcast(
-			user_name,
-			room_name,
-			'user-updated',
-			{ rooms: rooms_data, currentRoom: room_name });
+		this._socket_room_leave(room_name, user_name, rooms_data)
 		return 0;
 	}
 }
