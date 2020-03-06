@@ -1,19 +1,43 @@
 const EVENTS =
 {
-	CONNECT:      "connect",
-	DISCONNECT:   "disconnect",
-	USER_UPDATED: "user-updated",
-	GAME_CREATE:  "game-create",
-	GAME_JOIN:    "game-join",
-	CHAT_CREATE:  "chat-create",
-	CHAT_JOIN:    "chat-join",
-	GAME_SUMIBT:  "game-submit",
-	GAME_UPDATED: "game-updated",
-	CHAT_SUBMIT:  "chat-submit",
-	CHAT_UPDATED: "chat-updated",
-	RET_ERR:      "ret-err",			/* standard error. */
-	RET_CLT:      "ret-clt",			/* unexpected client state. */
-	RET_SVT:      "ret-svr"				/* server side error. */
+	CONNECT:       0,
+	DISCONNECT:    1,
+	USER_INIT:     100,
+	USER_UPDATED:  150,
+	ROOM_CREATE:   200
+	ROOM_INVITE:   201,
+	ROOM_RESPONSE: 202,
+	ROOM_JOIN:     203,
+	ROOM_LEAVE:    204,
+	ROOM_INVITED:  250,
+	ROOM_UPDATED:  251,
+	CHAT_SUMIBT:   300,
+	CHAT_UPDATED:  350,
+	GAME_SUMIBT:   400,
+	GAME_UPDATED:  450,
+	RET_ERR:       900,			/* standard error. */
+	RET_CLT:       901,			/* unexpected client state. */
+	RET_SVT:       902			/* server side error. */
+};
+
+const MessageType =
+{
+	SERVER: 0,
+	USER:   1
+};
+
+const RoomType =
+{
+	LOBBY: 0,
+	GAME:  1,
+	CHAT:  2
+};
+
+const RoomInvitationResponse =
+{
+	ACCEPT: 0,
+	REJECT: 1,
+	BLOCK:  2
 };
 
 const GameType =
@@ -25,7 +49,7 @@ const GameType =
 const GameState =
 {
 	WAITING:  0,
-	STARTING: 1
+	STARTING: 1,
 	STARTED:  2
 };
 
@@ -48,7 +72,7 @@ const PlayerAction =
 	REMATCH:   4,
 };
 
-const RockPaperScissorsAction
+const RockPaperScissorsAction =
 {
 	ROCK:     0,
 	PAPER:    1,
@@ -56,7 +80,7 @@ const RockPaperScissorsAction
 	RANDOM:   3
 };
 
-const Connect4Action
+const Connect4Action =
 {
 	PLACETOKEN: 0,
 	PLAYCARD:   1

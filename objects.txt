@@ -8,10 +8,14 @@
 <userRooms>       := <roomName> | <roomName> <userRooms>
 <roomName>        := 'roomName:' <string>
 
+<roomInfo>        := <roomName> ( <chatRoomInfo> | <gameRoomInfo> )
+<chatRoomInfo>    := 'type:' 0
+<gameRoomInfo>    := 'type:' 1 <gameInfo>
+<roomName>	      := 'roomName:' <string>
+
 <rooms>           := <room> | <room> <rooms>
 <room>            := <roomName> <users>
 <users>           := <userName> <userData> <users> | ""
-<userName>	      := 'userName:' <string>
 
 <action>          := <emoteAction> <userData> | <gameAction> <userData>
 <gameAction>      := <gameStateAction> | <gameplayAction>

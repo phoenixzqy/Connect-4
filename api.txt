@@ -4,51 +4,110 @@
 
 event:   CONNECT
 brief:   Client initiates connection.
-param:   object: socket			"socket" object
+param:   object: socket         "socket" object
 
 * =========================================================================== *
 
 event:   DISCONNECT
 brief:   Client initiates disconnection.
-param:   string: message		disconnect message
+param:   string: message        disconnect message
+inovke:  USER_UPDATED, GAME_UPDATED, CHAT_UPDATED
+side:    Update userlist of all users in lobby
+         Update userlist of all users in all current rooms.
 
 * =========================================================================== *
 
-event:   LOBBY_JOIN
-brief:   Client initial join to lobby(default room).
-param:   object: userInfo		"userInfo" object
-inovke:  USER_UPDATED, CHAT_UPDATED
+event:   USER_INIT
+brief:   Client initilization when joining server.
+param:   object: userInfo       "userInfo" object
+inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
+side:    Update userlist of all users in lobby (including self).
+         Update self's page to display lobby.
 
 * =========================================================================== *
 
-event:   CHAT_CREATE
-brief:   Client creates a new chat room.
-param:   string: roomName		name of the room
-inovke:  USER_UPDATED, CHAT_UPDATED
+event:   ROOM_CREATE
+brief:   Client creates a new room.
+param:   string: roomName       name of the room
+         string: roomInfo       "roomInfo" object
+inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
+side:    type == GAME:
+             Update userlist of all users in lobby.
+             Update userlist of all users in new room (self).
+             Update self's page to display game room.
+         type == CHAT:
+             Update userlist of all users in new room (self).
+             Update self's page with new chat tab.
 
 * =========================================================================== *
 
-event:   GAME_CREATE
-brief:   Client creates a new game room.
-param:   string: roomName		name of the room
-         object: gameInfo		"gameInfo" object
-inovke:  USER_UPDATED, CHAT_UPDATED
+event:   ROOM_INVITE
+brief:   Client invites another user to room.
+param:	 string: roomName       name of the room
+         string: userName       name of invitee
+inovke:  ROOM_INVITED, USER_UPDATED
+side:    type == GAME:
+             Update invitee's page with invitation.
+         type == CHAT:
+             Update invitee's page with new chat tab.
+TODO:    add blacklist for chat
+
+* =========================================================================== *
+
+event:   ROOM_RESPONSE
+brief:   Client responds to another user's invitation to join a (game) room.
+param:	 string: roomName       name of the room
+         string: token          invitation token
+            int: response       reponse to invitation
+inovke:  ROOM_UPDATE, USER_UPDATE, CHAT_UPDATED
+side:    response == ACCEPT && type == GAME:
+             Update userlist of all users in lobby.
+             Update userlist of all users in new room (self).
+             Update self's page to display game room.
+         response == REJECT || response == BLOCK:
+             Update invitor's page with response.
+
+* =========================================================================== *
+
+event:   ROOM_JOIN
+brief:   Client joins a (game) room.
+param:   string: roomName       name of the room
+inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
+side:    Update userlist of all users in lobby.
+         Update userlist of all users in room.
+         Update self's page to display (game) room.
+
+* =========================================================================== *
+
+event:   ROOM_LEAVE
+brief:   Client leaves a room.
+param:	 string: roomName       name of the room
+inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
+side:    type == GAME:
+             Update userlist of all users in lobby.
+             Update userlist of all users in room.
+             Update self's page to display lobby.
+         type == CHAT:
+             Update userlist of all users in room.
+             Update self's page to remove a chat tab.
 
 * =========================================================================== *
 
 event:   CHAT_SUBMIT
 brief:   Client submits a chat message.
-param:   string: message		chat message
-         string: roomName		the room for client to submit the message to
+param:   string: message        chat message
+         string: roomName       the room for client to submit the message to
 inovke:  CHAT_UPDATED
+side:    Update chat log of all users in (chat) room.
 
 * =========================================================================== *
 
 event:   GAME_SUBMIT
 brief:   Client submits a game move.
-param:   object: action			"action" object
-         string: roomName		name of the room
+param:   object: action         "action" object
+         string: roomName       name of the room
 inovke:  GAME_UPDATED
+side:    Update game state of all users in (game) room.
 
 
 
@@ -56,28 +115,30 @@ inovke:  GAME_UPDATED
 *                               SERVER EVENTS                                 *
 * =========================================================================== *
 
-trigger: LOBBY_JOIN, CHAT_CREATE, GAME_CREATE
-event:   USER_UPDATED
+event:   ROOM_UPDATED
 brief:   Server changed user's room.
-param:   object: rooms			"rooms" object
-         string: currentRoom	the room to update user list
-inovke:  USER_UPDATED, CHAT_UPDATED
+param:   object: rooms          "rooms" object
 
 * =========================================================================== *
 
-trigger: CHAT_UPDATED
-event:   LOBBY_JOIN, CHAT_CREATE, GAME_CREATE, CHAT_SUBMIT
+event:   USER_UPDATED
+brief:   Server changed room's users.
+param:   object: rooms          "rooms" object
+
+* =========================================================================== *
+
+event:   CHAT_UPDATED
 brief:   Server updated chat logs for room(s).
-param:   string: message		chat message
-         object: userData		"userData" object
-		 stirng: currentRoom	the room to update chat
+param:   string: message        message
+            int: type           message type
+         object: userData       "userData" object
+         string: currentRoom    the room to update chat
 
 * =========================================================================== *
 
-trigger: GAME_UPDATED
-event:   GAME_SUBMIT
+event:   GAME_UPDATED
 brief:   Server updated game state.
-param:   object: players		"players" object
-         object: gameData		"gameData" object
+param:   object: players        "players" object
+         object: gameData       "gameData" object
 
 * =========================================================================== *
