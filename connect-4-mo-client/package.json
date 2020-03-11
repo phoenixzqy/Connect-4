@@ -15,8 +15,9 @@
     "socket.io": "^2.3.0"
   },
   "scripts": {
-    "start": "PORT=3001 react-scripts start",
-    "build": "react-scripts build && rm -rf ../connect-4-mo-server/public && mv build ../connect-4-mo-server/public",
+    "start": "cp -r ../define define && PORT=3001 react-scripts start; rm -rf define",
+    "build": "cp -r ../define define && react-scripts build && rm -rf ../connect-4-mo-server/public && mv build ../connect-4-mo-server/public; rm -rf define",
+	"clean": "rm -rf define; rm -rf ../conect-4-mo-server/public",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "iotest": "node ./src/socketio_bash/index.js"

@@ -1,3 +1,5 @@
+const DEFINE      = require('./config.json').define;
+
 const BrokerAgent = require('./broker/brokerAgent')
 const RoomFactory = require('./roomFactory');
 
@@ -11,7 +13,7 @@ const LOGLEVEL    = require('./logger').LOGLEVEL;
 const Logger      = require('./logger').ConsoleLogger;
 
 /* Declares */
-const ROOMTYPE    = require('./constants').ROOM_TYPE;
+const ROOMTYPE    = require(`${DEFINE}/room`).TYPE;
 
 class Warden
 {

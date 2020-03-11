@@ -4,9 +4,9 @@ const Warden      = require('./io/rooms');
 const LOGLEVEL    = require('./io/logger').LOGLEVEL;
 const Logger      = require('./io/logger').ConsoleLogger;
 
-const ROOMTYPE    = require('./io/constants').ROOM_TYPE;
-
-const EVENTS      = require('../connect-4-mo-client/define').EVENTS;
+const ROOMTYPE    = require('../define/room').TYPE;
+const EVENT       = require('../define/event').TYPE;
+const DEFINE      = require('../define/define');
 
 function emit_err(socket, cmd, err)
 {
@@ -44,8 +44,6 @@ module.exports = function (http, app)
 
 			warden.addUser(user_name, user_data);
 			warden.lobbyJoin(ROOMTYPE.CHAT, 'Lobby', user_name);
-
-			warden.dumpRooms();
 		});
 
 		socket.on('disconnect', function(message)
@@ -53,7 +51,7 @@ module.exports = function (http, app)
 			let user_name = socket.client.id;
 
 			Logger.log(
-					`Disconnecting ${user_name} from server.`,
+					`Disconnecting ${user_name} from server - ${message}.`,
 					LOGLEVEL.INFO);
 
 			if (!warden.containsUser(user_name))
@@ -88,7 +86,6 @@ module.exports = function (http, app)
 				return -1;
 			}
 
-			warden.dumpRooms();
 			return 0;
 		});
 
@@ -100,11 +97,10 @@ module.exports = function (http, app)
 				return -1;
 			}
 
-			warden.dumpRooms();
 			return 0;
 		});
  
-		socket.on('chat-submit', function(msg)
+		socket.on('chat-submit', function(msg, room)
 		{
 			let name = socket.client.id;
 			let data = warden.userValue(name);
@@ -115,7 +111,7 @@ module.exports = function (http, app)
 				return -1;
 			}
 
-			io.sockets.in(socket.rooms).emit(
+			io.sockets.in(room).emit(
 					'chat-updated',
 					{
 						message: msg,

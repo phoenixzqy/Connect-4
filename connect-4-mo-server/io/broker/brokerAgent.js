@@ -1,10 +1,12 @@
+const DEFINE     = require('./config.json').define;
+
 const Broker     = require('./broker');
 const ChatBroker = require('./chatBroker');
 
 const LOGLEVEL   = require('../logger').LOGLEVEL;
 const Logger     = require('../logger').ConsoleLogger;
 
-const ROOMTYPE   = require('../constants').ROOM_TYPE;
+const ROOMTYPE   = require(`${DEFINE}/room`).TYPE;
 
 class BrokerAgent
 {

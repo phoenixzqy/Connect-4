@@ -1,10 +1,12 @@
+const DEFINE   = require('./config.json').define;
+
 //const Connect4Game = require('./game')
-const Users       = require('./users')
+const Users    = require('./users')
 
-const LOGLEVEL     = require('./logger').LOGLEVEL;
-const Logger       = require('./logger').ConsoleLogger;
+const LOGLEVEL = require('./logger').LOGLEVEL;
+const Logger   = require('./logger').ConsoleLogger;
 
-const ROOMTYPE     = require('./constants').ROOM_TYPE;
+const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
 
 class Room
 {

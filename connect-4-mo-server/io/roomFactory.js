@@ -1,10 +1,12 @@
+const DEFINE   = require('./config.json').define;
+
 const ChatRoom = require('./room').ChatRoom;
 const GameRoom = require('./room').GameRoom;
 
 const LOGLEVEL = require('./logger').LOGLEVEL;
 const Logger   = require('./logger').ConsoleLogger;
 
-const ROOMTYPE = require('./constants').ROOM_TYPE;
+const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
 
 class ChatRoomFactory
 {

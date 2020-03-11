@@ -1,9 +1,11 @@
+const DEFINE   = require('./config.json').define;
+
 const LOGGER   = require('./logger')
 
 const LOGLEVEL = LOGGER.LOGLEVEL;
 const Logger   = LOGGER.ConsoleLogger;
 
-const CONSTANTS = require('./constants')
+const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
 
 class Users
 {
