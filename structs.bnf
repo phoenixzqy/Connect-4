@@ -1,0 +1,69 @@
+<userInfo>              := <userName> ',' <userAvatar>
+<userName>              := 'userName:' <userNameValue>
+<userNameValue>         := <string>
+<userAvatar>            := 'userAvatar:' <int>
+
+<userInfoObject>        := 'UserInfo: {' <userInfo> '}'
+
+<userData>              := <userInfo> ',' <userIP> ',' <userID>
+<userIP>                := 'userIP:' <string>
+<userID>                := 'userID:' <int>
+
+<userDataObject>        := <userNameValue> ': {' <userData> '}'
+
+<roomInfo>              := <roomName> ',' ( <chatRoomInfo> | <gameRoomInfo> )
+<chatRoomInfo>          := 'roomType: 0'
+<gameRoomInfo>          := 'roomType: 1,' <gameInfo>
+<roomName>	            := 'roomName:' <roomNameValue>
+<roomNameValue>         := <string>
+
+<roomInfoObject>        := <roomNameValue> ': {' <roomInfo> '}'
+
+<roomArray>             := '[' <rooms> ']'
+<rooms>                 := <roomObject> | <roomObject> ',' <rooms>
+<roomObject>            := <roomNameValue> ': {' ( <users> | '' ) '}'
+<users>                 := <userDataObject> ',' <users> | <userDataObject>
+<user>                  := <userData> ',' <userRooms>
+<userRooms>             := <roomInfoObject> | <roomInfoObject> ',' <userRooms>
+
+<gameRoomAction>        := <gameAction> ',' <userData>
+<gameAction>            := 'actionType: 0,' <gameStateAction> |
+                           'actionType: 1,' <gamePlayAction>  |
+                           'actionType: 2,' <gameEmoteAction>
+
+<gameStateAction>       := 'gameStateAction:' ( '0' | '1' | '2' | '3' | '4' )
+<gamePlayAction>        := <rpsAction> | <c4Action>
+<gameEmoteAction>       := UNDEFINED
+
+<gameRoomActionObject>  := 'gameRoomAction: {' <gameRoomAction> '}'
+
+<rpsAction>             := 'gamePlayAction' : ( '0' | '1' | '2' | '3' )
+<c4Action>              := 'gamePlayAction' : ( '0,' <c4PlacementAction> | '1,' <c4CardAction> )
+<c4PlacementAction>     := <rowValue> , <colValue>
+<rowValue>              := 'rowValue :' <int>
+<colValue>              := 'columnValue :' <int>
+<c4CardAction>          := 'card:' <int>
+
+<gameInfo>              := <rpsInfo> | <c4Info>
+<rpsInfo>               := 'gameType: 0'
+<c4Info>                := 'gameType: 1,' <rowCount> ',' <colCount>
+<rowCount>              := 'rowCount:' <int>
+<colCount>              := 'columnCount:' <int>
+
+<gameData>              := <playersObject> ',' <gameState> ',' <gamePlayData>
+<playersObject>         := 'players: {' <players> '}'
+<players>               := <playerObject> ',' <players> | <playerObject>
+<playerObject>          := <userNameValue> ':{' <player> '}'
+<player>                := <playerState>
+<playerState>           := 'playerState :' ( '0' | '1' | '2' | '3' | '4' | '5' )
+<gameState>             := 'gameState :' ( '0' | '1' | '2' )
+<gameTypeData>          := <rpsGameData> | <c4GameData>
+<rpsGameData>           := <player> <rpsAction> | <player> <rpsAction> <rpsData>
+<c4GameData>            := <c4BoardData> ',' <c4StateData>
+<c4BoardData>           := '[' ( <intMatrix> | '' ) ']'
+<intMatrix>             := <intArray> | <intArray> ',' <intMatrix>
+<intArray>              := '[' ( <ints> | '' ) ']'
+<ints>                  := <int> | <int> ',' <ints>
+<c4StateData>           := UNDEFINED
+
+<gameDataObject>        := 'gameData: {' <gameData> '}'

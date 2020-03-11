@@ -19,7 +19,7 @@ side:    Update userlist of all users in lobby
 
 event:   USER_INIT
 brief:   Client initilization when joining server.
-param:   object: userInfo       "userInfo" object
+param:   object: userInfo       <userInfoObject>
 inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
 side:    Update userlist of all users in lobby (including self).
          Update self's page to display lobby.
@@ -29,7 +29,7 @@ side:    Update userlist of all users in lobby (including self).
 event:   ROOM_CREATE
 brief:   Client creates a new room.
 param:   string: roomName       name of the room
-         string: roomInfo       "roomInfo" object
+         object: roomInfo       <roomInfoObject>
 inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
 side:    type == GAME:
              Update userlist of all users in lobby.
@@ -104,7 +104,7 @@ side:    Update chat log of all users in (chat) room.
 
 event:   GAME_SUBMIT
 brief:   Client submits a game move.
-param:   object: action         "action" object
+param:   object: action         <gameRoomActionObject>
          string: roomName       name of the room
 inovke:  GAME_UPDATED
 side:    Update game state of all users in (game) room.
@@ -117,7 +117,7 @@ side:    Update game state of all users in (game) room.
 
 event:   USER_UPDATED
 brief:   Server changed room's users.
-param:   object: rooms          "rooms" object
+param:   object: rooms          <roomArray>
 
 * =========================================================================== *
 
@@ -131,7 +131,7 @@ param:   string: roomName       name of the room
 
 event:   ROOM_UPDATED
 brief:   Server changed user's room.
-param:   object: rooms          "rooms" object
+param:   object: rooms          <roomArray>
 
 * =========================================================================== *
 
@@ -139,14 +139,13 @@ event:   CHAT_UPDATED
 brief:   Server updated chat logs for room(s).
 param:   string: message        message
             int: type           message type
-         object: userData       "userData" object
-         object: rooms          "rooms" object
+         object: userData       <userDataObject>
+         object: rooms          <roomArray>
 
 * =========================================================================== *
 
 event:   GAME_UPDATED
 brief:   Server updated game state.
-param:   object: players        "players" object
-         object: gameData       "gameData" object
+param:   object: gameData       <gameDataObject>
 
 * =========================================================================== *
