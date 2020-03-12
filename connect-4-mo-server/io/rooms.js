@@ -1,19 +1,19 @@
-const DEFINE      = require('./config.json').define;
+const DEFINE              = require('./config.json').define;
 
-const BrokerAgent = require('./broker/brokerAgent')
-const RoomFactory = require('./roomFactory');
+const BrokerAgent         = require('./broker/brokerAgent')
+const AbstractRoomFactory = require('./factory/abstractRoomFactory');
 
-const ChatRoom    = require('./room').ChatRoom;
-const GameRoom    = require('./room').GameRoom;
+const ChatRoom            = require('./room').ChatRoom;
+const GameRoom            = require('./room').GameRoom;
 
-const Users       = require('./users')
+const Users               = require('./users')
 
 /* Log stuff */
-const LOGLEVEL    = require('./logger').LOGLEVEL;
-const Logger      = require('./logger').ConsoleLogger;
+const LOGLEVEL            = require('./logger').LOGLEVEL;
+const Logger              = require('./logger').ConsoleLogger;
 
 /* Declares */
-const ROOMTYPE    = require(`${DEFINE}/room`).TYPE;
+const GAMETYPE            = require(`${DEFINE}/game`).TYPE;
 
 class Warden
 {
@@ -21,10 +21,11 @@ class Warden
 	{
 		this.rooms   = new Map();
 		this.users   = new Users();
-		this.factory = new RoomFactory();
+		this.factory = new AbstractRoomFactory();
 		this.broker  = new BrokerAgent();
 
-		this.factory.addChatFactory();
+		//TODO move this outside
+		this.factory.addGame(GAMETYPE.ROCKPAPERSCISSORS);
 	}
 
 	userRoom(user_name) { return this.users.room(user_name); }
@@ -68,6 +69,11 @@ class Warden
 		this.broker.addBroker(type, io);
 	}
 
+	addGameType(game)
+	{
+		this.factory.addGameFactory(game);
+	}
+
 	containsUser(name)
 	{
 		return this.users.contains(name);
@@ -88,12 +94,12 @@ class Warden
 		this.users.erase(name);
 	}
 
-	addGameType(game)
+	containsRoom(name)
 	{
-		this.factory.addGameFactory(game);
+		return this.rooms.contains(name);
 	}
 
-	addRoom(type, name)
+	addRoom(name, info)
 	{
 		if (this.rooms.has(name))
 		{
@@ -103,8 +109,8 @@ class Warden
 			return -1;
 		}
 
-		Logger.log(`added room ${name} of type ${type}`, LOGLEVEL.INFO);
-		this.rooms.set(name, this.factory.build(name, type));
+		Logger.log(`Added room ${info.roomType}:${name}`, LOGLEVEL.INFO);
+		this.rooms.set(name, this.factory.build(name, info));
 		return 0;
 	}
 
@@ -168,7 +174,8 @@ class Warden
 		this.rooms.get(user_room).erase(user_name);
 
 		if (user_room === 'Lobby' || this.rooms.get(user_room).size() !== 0)
-			this.broker.roomLeft(room_type, user_room, user_name, this.toRoomJSON(user_room));
+			this.broker.roomLeft(
+				room_type, user_room, user_name, this.toRoomJSON(user_room));
 		else
 			this.rooms.delete(user_room);
 
@@ -192,9 +199,9 @@ class Warden
 			return -1;
 		}
 
-		//FIXME rollback if roomJoin fails?
-		if (this.roomLeave(room_type, user_name) < 0
-			|| this.roomJoin(room_type, dst_room_name, user_name, user_data) < 0)
+		if ((this.roomLeave(room_type, user_name))
+			|| (this.roomJoin(
+					room_type, dst_room_name, user_name, user_data) < 0))
 			{
 				Logger.log(
 					`Failed to move user ${user_name} `

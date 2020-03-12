@@ -1,13 +1,13 @@
+const DEFINE   = require('./config.json').define;
+
 const Broker   = require('./broker');
 
 const LOGLEVEL = require('../logger').LOGLEVEL;
 const Logger   = require('../logger').ConsoleLogger;
 
-var SRVMSG =
-{
-	ip:   'SERVER',
-	type: 'system'
-};
+const EVENT    = require(`${DEFINE}/event`).TYPE;
+const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
+const CHATTYPE = require(`${DEFINE}/chat`).TYPE;
 
 class ChatBroker extends Broker
 {
@@ -24,11 +24,22 @@ class ChatBroker extends Broker
 			rooms_data) < 0)
 			return -1;
 
-		super.send(user_name, 'chat-updated',
-			{...SRVMSG, message: `Joined ${room_name}.`});
+		super.send(
+			user_name,
+			EVENT.CHAT_UPDATED,
+			room_name,
+			CHATTYPE.SERVER,
+			`Joined ${room_name}.`
+		);
 
-		super.broadcast(user_name, room_name, 'chat-updated',
-			{...SRVMSG, message: `${user_name} has joined.`});
+		super.broadcast(
+			user_name,
+			room_name,
+			EVENT.CHAT_UPDATED,
+			room_name,
+			CHATTYPE.SERVER,
+			`${user_name} has joined.`
+		);
 
 		return 0;
 	}
@@ -41,8 +52,14 @@ class ChatBroker extends Broker
 			rooms_data) < 0)
 			return -1;
 
-		super.broadcast(user_name, room_name, 'chat-updated',
-			{...SRVMSG, message: `${user_name} has left.`});
+		super.broadcast(
+			user_name,
+			room_name,
+			EVENT.CHAT_UPDATED,
+			room_name,
+			CHATTYPE.SERVER,
+			`${user_name} has left.`
+		);
 
 		return 0;
 	}

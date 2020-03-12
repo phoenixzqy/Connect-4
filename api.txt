@@ -57,7 +57,6 @@ TODO:    add blacklist for chat
 event:   ROOM_RESPONSE
 brief:   Client responds to another user's invitation to join a (game) room.
 param:	 string: roomName       name of the room
-         string: token          invitation token
             int: response       reponse to invitation
 inovke:  ROOM_UPDATE, USER_UPDATE, CHAT_UPDATED
 side:    response == ACCEPT && type == GAME:
@@ -124,7 +123,6 @@ param:   object: room           <roomObject>
 event:   ROOM_INVITED
 brief:   Server send room invitation to a user.
 param:   string: roomName       name of the room
-         string: token          invitation token
             int: timeout        timeout in seconds
 
 * =========================================================================== *

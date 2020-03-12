@@ -67,12 +67,7 @@ class GameRoom extends Room
 	constructor(name, game)
 	{
 		super(name, ROOMTYPE.GAME);
-		this.game = new Game(width, height);
-	}
-
-	changeBoard(width, height)
-	{
-		this.game.changeBoard(width, height);
+		this.game = game;
 	}
 }
 

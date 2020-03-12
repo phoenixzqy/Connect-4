@@ -1,79 +1,171 @@
-const CONSTANTS = require('./constants')
-const Logger    = require('./logger')
+const DEFINE   = require('./config.json').define;
 
-const Direction = CONSTANTS.DIRECTION;
+const LOGLEVEL = require('./logger').LOGLEVEL;
+const Logger   = require('./logger').ConsoleLogger;
 
-const CONNECT4_MIN_PLAYERS = 2;
-const CONNECT4_MAX_PLAYERS = 2;
+const GAME     = require(`${DEFINE}/game`);
+const PLAYER   = GAME.PLAYER;
+
+class TurnBasedGame extends Game
+{
+	constructor(min, max)
+	{
+		super(min, max);
+		this.current = -1;
+	}
+
+	restart()
+	{
+		if (super.restart() < 0)
+			return -1;
+
+		this.current = Math.floor(Math.random() * this.size);
+		return 0;
+	}
+
+	nextTurn()
+	{
+		this.current = this.size % (this.current + PLAYER.NEXT.FORWARD);
+	}
+}
 
 class Game
 {
-	winner(player);
-
-	startingPlayer()
+	constructor(min, max)
 	{
-		/* Consider different strategies - mini games? */
-		current = Math.floor(Math.random() * player_size);
+		this.players   = new Map();
+		this.positions = new Map();
+		this.min       = min;
+		this.max       = max;
+		this.size      = 0;
+		this.state     = GAME.STATE.WAITING;
 	}
 
-	nextPlayer(direction)
-	{
-		current += direction;
+	_reset() {}
+	_won(name) {}
 
-		if (current >= player_size)
-			current = 0;
-		else if (current <= 0)
-			current = player_size - 1;
-	}
-
-	findWinner()
+	getWinners()
 	{
-		forEach((value, key) => { if (winner(key)) return value; });
-		return -1;
-	}
+		winners = new Array();
 
-	constructor(size)
-	{
-		this.players     = new Map();
-		this.player_size = size;
-		this.current     = -1;
+		forEach((value, key) => { if (_won(key)) winners.push(value); });
+		return winners;
 	}
 
 	addPlayer(name, position)
 	{
-		if (this.players.size() >= this.player_size)
+		if (this.players.size() >= this.max)
 		{
-			Logger.log("Failed to add player ${name} - room full.", ERR);
+			Logger.log(
+				`Failed to add player ${name} - room full.`,
+				LOGLEVEL.ERR);
 			return -1;
 		}
 
-		this.players.add(name, position);
+		if (this.positions.has(position))
+		{
+			Logger.log(
+				`Failed to add player ${name} - position taken.`,
+				LOGLEVEL.ERR);
+			return -1;
+		}
+
+		this.players.set(
+			name,
+			{
+				playerPosition: position,
+				playerState:    PLAYER.STATE.NOTREADY
+			});
+
+		this.positions.set(position, name);
+		return 0;
+	}
+
+	delPlayer(name)
+	{
+		if (!this.players.has(name))
+		{
+			Logger.log(`Player ${name} not found.`, LOGLEVEL.WARN);
+			return 0;
+		}
+
+		this.positions.delete(this.players.get(name));
+		this.players.delete(name);
+		return 0;
+	}
+
+	getPlayers()
+	{
+		return this.players;
+	}
+
+	setReady(name)
+	{
+		if (!this.players.has(name))
+		{
+			Logger.log(`Player ${name} not found.`, LOGLEVEL.ERR);
+			return -1;
+		}
+
+		this.players.get(name).playerState = PLAYER.STATE.READY;
 		return 0;
 	}
 
 	restart()
 	{
-		startingPlayer();
-	}
+		if (this.state != GAME.STATE.WAITING)
+		{
+			Logger.log(
+				`Failed to start game - incorrect state ${this.state}.`,
+				LOGLEVEL.ERR)
+			return -1;
+		}
 
-	//also check for winner before each turn
-	nextTurn()
-	{
-		nextPlayer();
-	}
+		forEach((value, key) =>
+		{
+			if (value.playerState != PLAYER.STATE.READY)
+				Logger.log(`Player ${key}` is not ready.`, LOGLEVEL.ERR);
+			return -1;
+		});
 
-	//check for winner after each move
-	makeMove();
+		_reset();
+
+		this.size = this.players.size();
+		this.state = GAME.STATE.STARTING;
+		return 0;
+	}
 }
 
-class Connect4Game extends Game
+class RockPaperScissorsGame extends Game
 {
-	constructor(width, height)
+	constructor(info)
 	{
-		super(CONNECT4_MIN_PLAYERS, CONNECT4_MAX_PLAYERS);
+		super(GAME.RPS.MIN_PLAYERS, GAME.RPS.MAN_PLAYERS);
+
+		if (info.gameType != GAME.TYPE.ROCKPAPERSCISSORS)
+		{
+			Logger.log(
+				`Invalid game type ${info.gameType} for rps.`,
+				LOGLEVEL.CRIT);
+		}
+	}
+}
+
+class Connect4Game extends TurnBasedGame
+{
+	constructor(info)
+	{
+		super(GAME.C4.MIN_PLAYERS, GAME.C4.MAN_PLAYERS);
 		this.board  = new Array();
-		this.width  = width;
-		this.height = height;
+		this.width  = info.columnCount;
+		this.height = info.rowCount;
+
+		if (info.gameType != GAME.TYPE.CONNECT4)
+		{
+			Logger.log(
+				`Invalid game type ${info.gameType} for c4.`,
+				LOGLEVEL.CRIT);
+		}
 	}
 
 	changeBoard(width, height)
@@ -83,4 +175,8 @@ class Connect4Game extends Game
 	}
 }
 
-module.exports = Connect4Game;
+module.exports = 
+{
+	RockPaperScissorsGame,
+	Connect4Game
+};

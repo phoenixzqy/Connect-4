@@ -1,5 +1,10 @@
+const DEFINE   = require('./config.json').define;
+
 const LOGLEVEL = require('../logger').LOGLEVEL;
 const Logger   = require('../logger').ConsoleLogger;
+
+const EVENT    = require(`${DEFINE}/event`).TYPE;
+const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
 
 class Broker
 {
@@ -8,27 +13,46 @@ class Broker
 		this.io = io;
 	}
 
-	send(user, event, data)
+	send(user, event, ..args)
 	{
-		this.io.sockets.connected[user].emit(event, data);
+		this.io.sockets.connected[user].emit(event, args);
 	}
 
-	broadcast(user, room, event, data)
+	sendError(user, event, errorMessage)
 	{
-		this.io.sockets.connected[user].broadcast.to(room).emit(event, data);
+		this.send(user, event, `Error: ${errorMessge}`);
 	}
 
-	announce(room, event, data)
+	broadcast(user, room, event, ...args)
 	{
-		this.io.in(room).emit(event, data);
+		this.io.sockets.connected[user].broadcast.to(room).emit(event, args);
+	}
+
+	announce(room, event, ...args)
+	{
+		this.io.in(room).emit(event, args);
 	}
 
 	_socket_room_join_callback(room_name, user_name, rooms_data)
 	{
-		this.announce(
+		if (!rooms_data.has(room_name))
+		{
+			Logger.log(
+				`Invalid rooms object - does not contain room ${room_name}.`,
+				LOGLEVEL.CRIT);
+			return;
+		}
+
+		this.send(
+			user_name,
+			EVENT.ROOM_UPDATED,
+			[ rooms_data ]);
+
+		this.broadcast(
+			user_name,
 			room_name,
-			'user-updated',
-			{ rooms: rooms_data, currentRoom: room_name });
+			EVENT.USER_UPDATED,
+			{ [room_name]: rooms_data[room_name] });
 	}
 
 	_socket_room_leave_callback(room_name, user_name, rooms_data)
@@ -36,8 +60,8 @@ class Broker
 		this.broadcast(
 			user_name,
 			room_name,
-			'user-updated',
-			{ rooms: rooms_data, currentRoom: room_name });
+			EVENT.USER_UPDATED,
+			{ [room_name]: rooms_data[room_name] });
 	}
 
 	_socket_room_join(room_name, user_name, rooms_data)
