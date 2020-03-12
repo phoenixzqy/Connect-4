@@ -95,8 +95,8 @@ side:    type == GAME:
 
 event:   CHAT_SUBMIT
 brief:   Client submits a chat message.
-param:   string: message        chat message
-         string: roomName       the room for client to submit the message to
+param:   string: roomName       the room for client to submit the message to
+         string: message        chat message
 inovke:  CHAT_UPDATED
 side:    Update chat log of all users in (chat) room.
 
@@ -117,7 +117,7 @@ side:    Update game state of all users in (game) room.
 
 event:   USER_UPDATED
 brief:   Server changed room's users.
-param:   object: rooms          <roomArray>
+param:   object: room           <roomObject>
 
 * =========================================================================== *
 
@@ -137,10 +137,10 @@ param:   object: rooms          <roomArray>
 
 event:   CHAT_UPDATED
 brief:   Server updated chat logs for room(s).
-param:   string: message        message
+param:   string: roomName       name of the room
             int: type           message type
-         object: userData       <userDataObject>
-         object: rooms          <roomArray>
+         string: message        message
+         [object: userData]     <userDataObject>, if type == USER
 
 * =========================================================================== *
 
