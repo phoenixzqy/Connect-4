@@ -6,7 +6,12 @@ const ACTION = Object.freeze(
 	RANDOM:   3
 });
 
+const MIN_PLAYER = 2;
+const MAX_PLAYER = 10;
+
 module.exports =
 {
-	ACTION
+	ACTION,
+	MIN_PLAYER,
+	MAX_PLAYER
 };

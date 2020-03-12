@@ -15,9 +15,9 @@ const TYPE = Object.freeze(
 	CHAT_UPDATED:  350,
 	GAME_SUMIBT:   400,
 	GAME_UPDATED:  450,
-	RET_ERR:       900,			/* standard error. */
-	RET_CLT:       901,			/* unexpected client state. */
-	RET_SVT:       902			/* server side error. */
+	ERR_GENERIC:   900,			/* standard error. */
+	ERR_CLIENT:    901,			/* unexpected client state. */
+	ERR_SERVER:    902			/* server side error. */
 });
 
 module.exports = 

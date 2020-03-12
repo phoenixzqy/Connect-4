@@ -4,7 +4,12 @@ const ACTION = Object.freeze(
 	PLAYCARD:   1
 });
 
+const MIN_PLAYER = 2;
+const MAX_PLAYER = 2;
+
 module.exports =
 {
-	ACTION
+	ACTION,
+	MIN_PLAYER,
+	MAX_PLAYER
 };

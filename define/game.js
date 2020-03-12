@@ -14,7 +14,7 @@ const STATE = Object.freeze(
 module.exports =
 {
 	PLAYER: require('./player'),
-	RPS:    require('./rockpapersicssors'),
+	RPS:    require('./rockpaperscissors'),
 	C4:     require('./connect4'),
 	TYPE,
 	STATE
