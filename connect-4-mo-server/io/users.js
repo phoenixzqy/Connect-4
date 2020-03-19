@@ -7,43 +7,7 @@ const Logger   = LOGGER.ConsoleLogger;
 
 const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
 
-class User
-{
-	constructor(name, avatar, id, ip)
-	{
-		this.name      = name;
-		this.avatar    = avatar;
-		this.ip        = ip;
-		this.id        = id;
-		this.rooms     = new Set();
-		this.chatCount = 0; //define interval and threshold in define/chat.js
-	}
-
-	toJSON()
-	{
-		return 
-		{
-			userName:   this.name,
-			userAvatar: this.avatar,
-			userIP:     this.ip,
-			userID:     this.id
-		};
-	}
-
-	dump()
-	{
-		Logger.log(
-			`name:   ${this.name}, `
-			`avatar: ${this.name}, `
-			`ip:     ${this.name}, `
-			`id:     ${this.name}, `
-			`rooms:  ${JSON.stringify(this.rooms)}, `
-			`chats:  ${this.chatCount}`,
-			LOGLEVEL.DEBUG
-		);
-	}
-}
-
+//TODO use user class instead
 class Users
 {
 	constructor()
