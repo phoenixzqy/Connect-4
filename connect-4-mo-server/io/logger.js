@@ -29,7 +29,7 @@ class ConsoleLogger extends Logger
 			case LOGLEVEL.NOTICE: return "NOTICE";
 			case LOGLEVEL.INFO:   return "INFO";
 			case LOGLEVEL.DEBUG:  return "DEBUG";
-			default:     return "?"
+			default:              return "?"
 		}
 	}
 
