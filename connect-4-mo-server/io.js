@@ -1,8 +1,7 @@
 const BrokerAgent  = require('./io/broker/brokerAgent');
 const EventHandler = require('./io/handler/eventHandler');
 const Warden       = require('./io/rooms');
-//const InviteList   = require('./io/inviteList');
-const InviteList   = new Map();
+const InviteList   = require('./io/invitelist');
 
 const LOGLEVEL     = require('./io/logger').LOGLEVEL;
 const Logger       = require('./io/logger').ConsoleLogger;
@@ -11,12 +10,14 @@ const ROOMTYPE     = require('../define/room').TYPE;
 const EVENT        = require('../define/event').TYPE;
 
 const MAX_CONN     = 2000;
+const MAX_INVITES  = 10;
+const MAX_INVITORS = 20000;
 
 module.exports = function (http, app)
 {
 	var io      = require('socket.io')(http);
-	var invites = new InviteList();
-	var warden  = new Warden(io, MAX_USERS);
+	var invites = new InviteList(MAX_INVITORS, MAX_INVITES);
+	var warden  = new Warden(io);
 	var broker  = new BrokerAgent();
 	var handler = new EventHandler(io, warden, invites);
 
