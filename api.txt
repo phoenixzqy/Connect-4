@@ -44,10 +44,11 @@ side:    type == GAME:
 event:   ROOM_INVITE
 brief:   Client invites another user to room.
 param:	 string: roomName       name of the room
-         string: userName       name of invitee
+          array: userNames      invitee names array
 inovke:  ROOM_INVITED, USER_UPDATED
 side:    type == GAME:
              Update invitee's page with invitation.
+             Cannot invite more than one person.
          type == CHAT:
              Update invitee's page with new chat tab.
 TODO:    add blacklist for chat
@@ -58,6 +59,7 @@ event:   ROOM_RESPONSE
 brief:   Client responds to another user's invitation to join a (game) room.
 param:	 string: roomName       name of the room
             int: response       reponse to invitation
+         string: invitor        name of the invitor
 inovke:  ROOM_UPDATE, USER_UPDATE, CHAT_UPDATED
 side:    response == ACCEPT && type == GAME:
              Update userlist of all users in lobby.
@@ -82,7 +84,9 @@ event:   ROOM_LEAVE
 brief:   Client leaves a room.
 param:	 string: roomName       name of the room
 inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
-side:    type == GAME:
+side:    type == LOBBY:
+             Error: Leaving lobby should not call this API.
+         type == GAME:
              Update userlist of all users in lobby.
              Update userlist of all users in room.
              Update self's page to display lobby.
@@ -123,7 +127,9 @@ param:   object: room           <roomObject>
 event:   ROOM_INVITED
 brief:   Server send room invitation to a user.
 param:   string: roomName       name of the room
+         string: invitor        name of the invitor
             int: timeout        timeout in seconds
+TODO:    add corresponding ROOM_RESPOND to let invitor know result?
 
 * =========================================================================== *
 
