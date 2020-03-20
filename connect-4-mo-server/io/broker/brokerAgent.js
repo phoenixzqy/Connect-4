@@ -22,8 +22,7 @@ class BrokerAgent
 			case ROOMTYPE.CHAT:
 				this.brokers.set(room_type, new ChatBroker(io));
 				break;
-			case ROOMTYPE.RPS:
-			case ROOMTYPE.CONNECT4:
+			case ROOMTYPE.GAME:
 				this.brokers.set(room_type, new Broker(io));
 				break;
 			default:
@@ -59,6 +58,18 @@ class BrokerAgent
 
 		return this.brokers.get(room_type).roomLeft(
 			room_name, user_name, rooms_data);
+	}
+
+	roomInvite(room_type, room_name, user_name, invitee, timeout)
+	{
+		if (!this.brokers.has(room_type))
+		{
+			Logger.log(`Invalid room type ${room_type}.`, LOGLEVEL.ERR);
+			return -1;
+		}
+
+		return this.brokers.get(room_type).roomInvite(
+			room_name, user_name, invitee, timeout);
 	}
 }
 

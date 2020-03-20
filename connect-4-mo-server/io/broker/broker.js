@@ -72,7 +72,7 @@ class Broker
 			{
 				Logger.log(
 					`User ${user_name} failed to join room ${room_name}`,
-				LOGLEVEL.ERROR);
+					LOGLEVEL.ERROR);
 				return;
 			}
 
@@ -88,7 +88,7 @@ class Broker
 			{
 				Logger.log(
 					`User ${user_name} failed to leave room ${room_name}`,
-				LOGLEVEL.ERROR);
+					LOGLEVEL.ERROR);
 				return;
 			}
 
@@ -121,6 +121,18 @@ class Broker
 		}
 
 		this._socket_room_leave(room_name, user_name, rooms_data)
+		return 0;
+	}
+
+	roomInvite(room_name, user_name, invitee, timeout)
+	{
+		this.send(
+			invitee,
+			EVENT.ROOM_INVITED,
+			room_name,
+			user_name,
+			timeout);
+
 		return 0;
 	}
 }

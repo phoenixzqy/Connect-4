@@ -17,14 +17,14 @@ class Room
 		this.users = new Users();
 	}
 
-	type() { return this.type; }
+	size()         { return this.users.size(); }
+	contains(name) { return this.users.contains(name); }
 
-	size()
-	{
-		return this.users.size();
-	}
+	name()  { return this.name; }
+	type()  { return this.type; }
+	users() { return this.users; }
 
-	add(name, data)
+	insert(name, data)
 	{
 		this.users.add(name, data);
 		Logger.log(`Added user ${name} to room ${this.name}.`,
@@ -36,11 +36,6 @@ class Room
 		this.users.erase(name);
 		Logger.log(`Deleted user ${name} from room ${this.name}.`,
 			LOGLEVEL.DEBUG);
-	}
-
-	contains(name)
-	{
-		return this.users.contains(name);
 	}
 
 	toJSON()

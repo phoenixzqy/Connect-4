@@ -1,13 +1,12 @@
 const DEFINE   = require('./config.json').define;
 
-const LOGGER   = require('./logger')
+const User     = require('./user');
+
+const LOGGER   = require('./logger');
 
 const LOGLEVEL = LOGGER.LOGLEVEL;
 const Logger   = LOGGER.ConsoleLogger;
 
-const ROOMTYPE = require(`${DEFINE}/room`).TYPE;
-
-//TODO use user class instead
 class Users
 {
 	constructor()
@@ -15,50 +14,15 @@ class Users
 		this.users = new Map();
 	}
 
-	size()
-	{
-		return this.users.size;
-	}
+	size()         { return this.users.size(); }
+	contains(name) { return this.users.has(name); }
 
-	add(name, data)
-	{
-		this.users.set(name, {...data, room: null});
-		//Logger.log(`Added user ${name}.`, LOGLEVEL.DEBUG);
-	}
+	user(name) { return this.users.get(name); }
+	data(name) { return this.users.get(name).data(); }
+	room(name) { return this.users.get(name).room(); }
 
-	erase(name)
-	{
-		this.users.delete(name);
-		//Logger.log(`Deleted user ${name}.`, LOGLEVEL.DEBUG);
-	}
-
-	join(user_name, room_name)
-	{
-		this.value(user_name).room = room_name;
-	}
-
-	exit(name)
-	{
-		this.value(name).room = null;
-	}
-
-	value(name)
-	{
-		return this.users.get(name);
-	}
-
-	room(name)
-	{
-		if (!this.contains(name))
-			return -1;
-
-		return this.value(name).room;
-	}
-
-	contains(name)
-	{
-		return this.users.has(name);
-	}
+	insert(name, data) { this.users.set(name, new User(name, data)); }
+	erase(name)        { this.users.delete(name); }
 
 	toJSON()
 	{
