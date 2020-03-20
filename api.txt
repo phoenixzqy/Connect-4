@@ -51,7 +51,8 @@ side:    type == GAME:
              Cannot invite more than one person.
          type == CHAT:
              Update invitee's page with new chat tab.
-TODO:    add blacklist for chat
+TODO:    add blacklist
+NOTE:    userNames are userIDs (socketIDs) as they ought to be unique.
 
 * =========================================================================== *
 
@@ -77,6 +78,7 @@ inovke:  ROOM_UPDATED, USER_UPDATED, CHAT_UPDATED
 side:    Update userlist of all users in lobby.
          Update userlist of all users in room.
          Update self's page to display (game) room.
+note:    only game room can be joined (chat need invite)
 
 * =========================================================================== *
 
